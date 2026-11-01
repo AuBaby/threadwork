@@ -52,7 +52,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const fabrics = [
       // Every blanket is a cleaned-up knit image (Codex): `image` is its swatch, `hex` the average colour of the original photo.
       // `scale` sets the stitch size on the cloth; Pink Quartz (1254px, ~28 stitches across) is the reference look.
-      // With `texture` the cloth is that cleaned-up knit image, shadows lifted (`lift`, default .28; negative deepens them), colour-matched
+      // With `texture` the cloth is that cleaned-up knit image (optionally `crop:[x,y,w,h]` as fractions of the photo first), shadows lifted (`lift`, default .28; negative deepens them), colour-matched
       // to `hex` (greyed first when `neutral`) and repeated at `scale`;
       // without one the cloth is drawn as seed stitch.
       { name:'Pink Quartz', hex:'#f5aab9', image:ASSETS+'fabrics/pink-quartz.webp', texture:ASSETS+'fabrics/pink-quartz.webp', scale:.425, line:'sawa' }, { name:'Henna', hex:'#d1a180', image:ASSETS+'fabrics/henna.webp', texture:ASSETS+'fabrics/henna.webp', scale:.425, line:'sawa' },
@@ -67,9 +67,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       { name:'Hydrangea', hex:'#b2c0ca', image:ASSETS+'fabrics/cashmere-hydrangea.jpg', texture:ASSETS+'fabrics/cashmere-hydrangea.jpg', scale:.5, line:'cashmere' }, { name:'Lavande', hex:'#d7bada', image:ASSETS+'fabrics/cashmere-lavande.jpg', texture:ASSETS+'fabrics/cashmere-lavande.jpg', scale:.5, line:'cashmere' },
       { name:'Peony', aka:['Peony Pink'], hex:'#d7b5b0', image:ASSETS+'fabrics/cashmere-peony.webp', texture:ASSETS+'fabrics/cashmere-peony.webp', scale:.5, line:'cashmere' },
       // Kid + Adult beanies (rib photos, placeholder).
-      { name:'Charcoal', hex:'#4b4b54', image:ASSETS+'fabrics/beanie-charcoal.webp', texture:ASSETS+'fabrics/beanie-charcoal.webp', scale:.45, line:'beanie' }, { name:'Chocolate', hex:'#552b20', image:ASSETS+'fabrics/beanie-chocolate.webp', texture:ASSETS+'fabrics/beanie-chocolate.webp', scale:.45, line:'beanie' },
-      { name:'Cobalt', hex:'#263074', image:ASSETS+'fabrics/beanie-cobalt.webp', texture:ASSETS+'fabrics/beanie-cobalt.webp', scale:.45, line:'beanie' }, { name:'Lavande', hex:'#ad8eab', image:ASSETS+'fabrics/beanie-lavande.webp', texture:ASSETS+'fabrics/beanie-lavande.webp', scale:.45, line:'beanie' },
-      { name:'Pink Haze', hex:'#ce7980', image:ASSETS+'fabrics/beanie-pink-haze.webp', texture:ASSETS+'fabrics/beanie-pink-haze.webp', scale:.45, line:'beanie' }
+      { name:'Charcoal', hex:'#4b4b54', image:ASSETS+'fabrics/beanie-charcoal.webp', texture:ASSETS+'fabrics/beanie-charcoal.webp', crop:[.15,.05,.7,.5], scale:.3, line:'beanie' }, { name:'Chocolate', hex:'#552b20', image:ASSETS+'fabrics/beanie-chocolate.webp', texture:ASSETS+'fabrics/beanie-chocolate.webp', crop:[.15,.05,.7,.5], scale:.3, line:'beanie' },
+      { name:'Cobalt', hex:'#263074', image:ASSETS+'fabrics/beanie-cobalt.webp', texture:ASSETS+'fabrics/beanie-cobalt.webp', crop:[.15,.05,.7,.5], scale:.3, line:'beanie' }, { name:'Lavande', hex:'#ad8eab', image:ASSETS+'fabrics/beanie-lavande.webp', texture:ASSETS+'fabrics/beanie-lavande.webp', crop:[.15,.05,.7,.5], scale:.3, line:'beanie' },
+      { name:'Pink Haze', hex:'#ce7980', image:ASSETS+'fabrics/beanie-pink-haze.webp', texture:ASSETS+'fabrics/beanie-pink-haze.webp', crop:[.15,.05,.7,.5], scale:.3, line:'beanie' }
     ];
     const fonts = [
       // Petit is a non-connecting script: each letter carries its own entry
@@ -1025,7 +1025,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // average), then cropped to the size at which its right edge best continues its left edge
     // (and bottom its top), so the lattice lines up across the repeat.
     const loadTexture=f=>new Promise((ok,fail)=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{
-      const w=img.width,h=img.height,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(img,0,0);
+      const cr=f.crop||[0,0,1,1],sx=Math.round(img.width*cr[0]),sy=Math.round(img.height*cr[1]),w=Math.round(img.width*cr[2]),h=Math.round(img.height*cr[3]),c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(img,sx,sy,w,h,0,0,w,h);
       const d=g.getImageData(0,0,w,h),px=d.data,n=px.length/4,lum=i=>.299*px[i]+.587*px[i+1]+.114*px[i+2];
       // A `neutral` texture is greyed first so it can be tinted to any blanket colour (Moon Stone borrows the pink tile).
       if(f.neutral)for(let i=0;i<px.length;i+=4)px[i]=px[i+1]=px[i+2]=lum(i);
