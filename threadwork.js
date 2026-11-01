@@ -22,12 +22,12 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     //   studio  — this standalone page and the Claude artifact (design work; shows the Advanced switch)
     //   lab     — the store's embroidery lab page
     //   product — a store product page; `embed.product` is then the product handle, `embed.line` the product
-    //             line ('sawa' or 'popcorn'; a line with no fabrics of its own borrows the same-named fabric) and `embed.blanket` the colour name ("Moon Stone", "moon-stone"…);
+    //             line ('sawa', 'popcorn', 'cashmere', 'beanie'; a line with no fabric of that name borrows the same-named fabric of another line) and `embed.blanket` the colour name ("Moon Stone", "moon-stone"…);
     //             the blanket row is hidden there. Which products get the button is decided in the Liquid block.
     // Standalone it is studio, overridable with ?mode=&product= for testing; the embed build replaces
     // these lines with the mount element's data-mode / data-product and its shadow root (default lab).
     const MODES=['studio','lab','product'];
-    const embed={mode:MODES.includes(MOUNT.dataset.mode)?MOUNT.dataset.mode:'lab',product:MOUNT.dataset.product||'',blanket:MOUNT.dataset.blanket||'',line:MOUNT.dataset.line||'',price:MOUNT.dataset.price||'',flow:MOUNT.dataset.flow||'',variant:MOUNT.dataset.variant||'',title:MOUNT.dataset.title||'',url:MOUNT.dataset.url||'',open:MOUNT.hasAttribute('data-open')};
+    const embed={mode:MODES.includes(MOUNT.dataset.mode)?MOUNT.dataset.mode:'lab',product:MOUNT.dataset.product||'',blanket:MOUNT.dataset.blanket||'',line:MOUNT.dataset.line||'',price:MOUNT.dataset.price||'',flow:MOUNT.dataset.flow||'',variant:MOUNT.dataset.variant||'',title:MOUNT.dataset.title||'',url:MOUNT.dataset.url||'',max:MOUNT.dataset.max||'',open:MOUNT.hasAttribute('data-open')};
     const root=SHADOW;
     const $ = id => root.getElementById(id);
     root.querySelector('.shell').dataset.mode=embed.mode;
@@ -38,7 +38,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const announce=(name,detail)=>{try{window.dispatchEvent(new CustomEvent('threadwork:'+name,{detail:Object.assign({flow:FLOW,product:embed.product},detail||{})}));if(Array.isArray(window.dataLayer))window.dataLayer.push(Object.assign({event:'threadwork_'+name,threadwork_flow:FLOW,threadwork_product:embed.product},detail||{}));}catch(e){}};
     const money=n=>'$'+n.toFixed(2);
     let saved=null,saving=false;const urlRestore={cancelled:false,openWhenReady:false};
-  const syncQuiet=async()=>{const t=document.querySelector('[data-threadwork-open]');if(!t||!canSell())return;try{const c=await (await fetch('/cart.js',{credentials:'same-origin'})).json();const has=(c.items||[]).some(i=>/The (Sawa|Popcorn) Blanket/i.test(i.product_title||'')||/Custom Hand Embroidery/i.test(i.product_title||''));if(has)t.dataset.quiet='1';else delete t.dataset.quiet;}catch(e){}};
+  const syncQuiet=async()=>{const t=document.querySelector('[data-threadwork-open]');if(!t||!canSell())return;try{const c=await (await fetch('/cart.js',{credentials:'same-origin'})).json();const has=(c.items||[]).some(i=>/(Sawa|Popcorn) Blanket|Little Love Blanket|Cashmere Cloud Baby Blanket Gift Set|Kid Beanie|Adult Beanie/i.test(i.product_title||'')||/Custom Hand Embroidery/i.test(i.product_title||''));if(has)t.dataset.quiet='1';else delete t.dataset.quiet;}catch(e){}};
   document.addEventListener('theme:cart:updated',()=>syncQuiet());
     // The twelve thread colours offered on the store.
     const threads = [
@@ -57,7 +57,19 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // without one the cloth is drawn as seed stitch.
       { name:'Pink Quartz', hex:'#f5aab9', image:ASSETS+'fabrics/pink-quartz.webp', texture:ASSETS+'fabrics/pink-quartz.webp', scale:.425, line:'sawa' }, { name:'Henna', hex:'#d1a180', image:ASSETS+'fabrics/henna.webp', texture:ASSETS+'fabrics/henna.webp', scale:.425, line:'sawa' },
       { name:'Moon Stone', hex:'#aba8a7', image:ASSETS+'fabrics/moon-stone.webp', texture:ASSETS+'fabrics/pink-quartz.webp', neutral:true, lift:-.35, marl:.2, scale:.425, line:'sawa' }, { name:'Sky Blue', hex:'#8da6c7', image:ASSETS+'fabrics/sky-blue.webp', texture:ASSETS+'fabrics/sky-blue.webp', scale:.425, line:'sawa' },
-      { name:'Citron', hex:'#ded693', image:ASSETS+'fabrics/citron.webp', texture:ASSETS+'fabrics/citron.webp', scale:.425, line:'sawa' }
+      { name:'Citron', hex:'#ded693', image:ASSETS+'fabrics/citron.webp', texture:ASSETS+'fabrics/citron.webp', scale:.425, line:'sawa' },
+      // Popcorn (baby + adult). Moon Stone has no photo yet and falls back to the Sawa knit by name.
+      { name:'Pink Quartz', hex:'#eeb0bc', image:ASSETS+'fabrics/popcorn-pink-quartz.webp', texture:ASSETS+'fabrics/popcorn-pink-quartz.webp', scale:.38, line:'popcorn' }, { name:'Henna', hex:'#d5a788', image:ASSETS+'fabrics/popcorn-henna.webp', texture:ASSETS+'fabrics/popcorn-henna.webp', scale:.38, line:'popcorn' },
+      { name:'Sky Blue', hex:'#8b9eb6', image:ASSETS+'fabrics/popcorn-sky-blue.webp', texture:ASSETS+'fabrics/popcorn-sky-blue.webp', scale:.45, line:'popcorn' }, { name:'Citron', hex:'#e6e195', image:ASSETS+'fabrics/popcorn-citron.webp', texture:ASSETS+'fabrics/popcorn-citron.webp', scale:.38, line:'popcorn' },
+      { name:'Cream', hex:'#c2baa8', image:ASSETS+'fabrics/popcorn-cream.webp', texture:ASSETS+'fabrics/popcorn-cream.webp', scale:.45, line:'popcorn' },
+      // Little Love cashmere + the Cashmere Cloud gift sets (same knit). 'Peony Pink' is the gift set's name for Peony.
+      { name:'Butter Cream', hex:'#b7a698', image:ASSETS+'fabrics/cashmere-butter-cream.jpg', texture:ASSETS+'fabrics/cashmere-butter-cream.jpg', scale:.5, line:'cashmere' }, { name:'Cloud', hex:'#c6beb2', image:ASSETS+'fabrics/cashmere-cloud.jpg', texture:ASSETS+'fabrics/cashmere-cloud.jpg', scale:.5, line:'cashmere' },
+      { name:'Hydrangea', hex:'#b2c0ca', image:ASSETS+'fabrics/cashmere-hydrangea.jpg', texture:ASSETS+'fabrics/cashmere-hydrangea.jpg', scale:.5, line:'cashmere' }, { name:'Lavande', hex:'#d7bada', image:ASSETS+'fabrics/cashmere-lavande.jpg', texture:ASSETS+'fabrics/cashmere-lavande.jpg', scale:.5, line:'cashmere' },
+      { name:'Peony', aka:['Peony Pink'], hex:'#d7b5b0', image:ASSETS+'fabrics/cashmere-peony.webp', texture:ASSETS+'fabrics/cashmere-peony.webp', scale:.5, line:'cashmere' },
+      // Kid + Adult beanies (rib photos, placeholder).
+      { name:'Charcoal', hex:'#4b4b54', image:ASSETS+'fabrics/beanie-charcoal.webp', texture:ASSETS+'fabrics/beanie-charcoal.webp', scale:.45, line:'beanie' }, { name:'Chocolate', hex:'#552b20', image:ASSETS+'fabrics/beanie-chocolate.webp', texture:ASSETS+'fabrics/beanie-chocolate.webp', scale:.45, line:'beanie' },
+      { name:'Cobalt', hex:'#263074', image:ASSETS+'fabrics/beanie-cobalt.webp', texture:ASSETS+'fabrics/beanie-cobalt.webp', scale:.45, line:'beanie' }, { name:'Lavande', hex:'#ad8eab', image:ASSETS+'fabrics/beanie-lavande.webp', texture:ASSETS+'fabrics/beanie-lavande.webp', scale:.45, line:'beanie' },
+      { name:'Pink Haze', hex:'#ce7980', image:ASSETS+'fabrics/beanie-pink-haze.webp', texture:ASSETS+'fabrics/beanie-pink-haze.webp', scale:.45, line:'beanie' }
     ];
     const fonts = [
       // Petit is a non-connecting script: each letter carries its own entry
@@ -73,7 +85,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     ];
     const state = { text:'', font:0, thread:0, fabric:0, weight:5, length:10, guide:false, advanced:false, zoom:1, panX:0, panY:0 };
     // A named blanket (from the product page) wins over the default; unknown names fall back to it.
-    {const norm=t=>t.toLowerCase().replace(/[^a-z]/g,''),want=norm(embed.blanket);const match=f=>norm(f.name)===want;let i=embed.line?fabrics.findIndex(f=>f.line===embed.line&&match(f)):-1;if(i<0)i=fabrics.findIndex(match);if(i>=0)state.fabric=i;}
+    {const norm=t=>t.toLowerCase().replace(/[^a-z]/g,''),want=norm(embed.blanket);const match=f=>norm(f.name)===want||(f.aka||[]).some(a=>norm(a)===want);let i=embed.line?fabrics.findIndex(f=>f.line===embed.line&&match(f)):-1;if(i<0&&want)i=fabrics.findIndex(match);if(i<0&&embed.line)i=fabrics.findIndex(f=>f.line===embed.line);if(i>=0)state.fabric=i;}
     // Every measurement, raster and guide uses the chosen face at 180 px,
     // with the face's own tracking (a non-connecting script sits tighter).
     const fontSpec = () => `180px "${fonts[state.font].family}"`;
@@ -109,7 +121,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     function toast(text){$('toast').textContent=text;$('toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('show'),2200);}
     // Near-white swatches vanish into the panel without a firmer edge.
     const pale=hex=>[1,3,5].every(i=>parseInt(hex.slice(i,i+2),16)>228);
-    function swatches(items,container,key){items.forEach((item,i)=>{const b=document.createElement('button');b.className='swatch'+(key==='fabric'?' fabric-swatch':'');b.style.setProperty('--swatch',item.hex);if(pale(item.hex))b.classList.add('pale');b.title=item.name;b.setAttribute('aria-label',item.name);b.setAttribute('aria-pressed',String(i===state[key]));b.addEventListener('click',()=>{state[key]=i;updateControls();if(key==='fabric')drawCloth();requestRender();});$(container).append(b);});}
+    function swatches(items,container,key){items.forEach((item,i)=>{const b=document.createElement('button');b.className='swatch'+(key==='fabric'?' fabric-swatch':'');b.style.setProperty('--swatch',item.hex);if(pale(item.hex))b.classList.add('pale');b.title=item.name;b.setAttribute('aria-label',item.name);b.setAttribute('aria-pressed',String(i===state[key]));b.addEventListener('click',()=>{state[key]=i;updateControls();if(key==='fabric')ensureTexture(fabrics[i]).then(()=>{drawCloth();requestRender();});else requestRender();});$(container).append(b);});}
     swatches(threads,'threads','thread');swatches(fabrics,'fabrics','fabric');
     // When a swatch row has to wrap, split it evenly rather than leaving a short last line.
     function balanceRows(){for(const row of root.querySelectorAll('.swatches')){const items=[...row.children];if(!items.length)continue;row.style.maxWidth='';if(getComputedStyle(row).display==='grid'){const cs=getComputedStyle(row),sw=items[0].offsetWidth,inner=row.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),minGap=10;if(inner<=0||!sw)continue;const fit=Math.max(1,Math.floor((inner+minGap)/(sw+minGap)));let per=items.length;if(fit<items.length){const rows=Math.ceil(items.length/fit);per=Math.ceil(items.length/rows);}row.style.gridTemplateColumns='repeat('+per+','+sw+'px)';continue;}const gap=parseFloat(getComputedStyle(row).gap)||0,w=items[0].offsetWidth,fit=Math.max(1,Math.floor((row.clientWidth+gap)/(w+gap)));if(fit>=items.length)continue;const rows=Math.ceil(items.length/fit),per=Math.ceil(items.length/rows);row.style.maxWidth=(per*w+(per-1)*gap)+'px';}}
@@ -889,7 +901,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // copied; otherwise it can composite from a stale copy of the canvas.
     function drawView(){art.getImageData(0,0,1,1);ctx.save();ctx.clearRect(0,0,W,H);ctx.fillStyle=fabrics[state.fabric].hex;ctx.fillRect(0,0,W,H);ctx.translate(W/2+state.panX,H/2+state.panY);ctx.scale(state.zoom,state.zoom);ctx.drawImage(artwork,-W/2,-H/2);ctx.restore();}
     // Spaces are free: the letter limit counts letters only, and so does the price. Popcorn takes a 3-letter monogram; Sawa up to 20.
-    const PRICE_PER_LETTER=10;const MAX_LETTERS=embed.line==='popcorn'?3:20;{const v=root.querySelector('label[for=name]+.value');if(v)v.textContent='Up to '+MAX_LETTERS+' characters';if(embed.line==='popcorn'){const l=root.querySelector('label[for=name]');if(l)l.textContent='Embroidery initials';}const c=root.querySelector('#charCount');if(c)c.textContent='0/'+MAX_LETTERS;}
+    const PRICE_PER_LETTER=10;const MAX_LETTERS=parseInt(embed.max,10)||(embed.line==='popcorn'?3:20);{const v=root.querySelector('label[for=name]+.value');if(v)v.textContent='Up to '+MAX_LETTERS+' characters';if(MAX_LETTERS<=3){const l=root.querySelector('label[for=name]');if(l)l.textContent='Embroidery initials';}const c=root.querySelector('#charCount');if(c)c.textContent='0/'+MAX_LETTERS;}
     const STITCHABLE=/[^\p{L}\p{N} .,'&-]/gu;const clean=text=>text.replace(STITCHABLE,'').replace(/ {2,}/g,' ');const letters=text=>[...clean(text).replace(/\s/g,'')].length;
     $('name').addEventListener('input',e=>{const v=clean(e.target.value);if(v!==e.target.value)e.target.value=v;if(letters(v)>MAX_LETTERS){e.target.value=state.text;return;}state.text=v;updateControls();clearTimeout(debounce);debounce=setTimeout(()=>{makeGeometry();requestRender();},40);});
     for(const key of ['weight','length'])$(key).addEventListener('input',e=>{state[key]=+e.target.value;updateControls();requestRender();});
@@ -1045,9 +1057,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         for(let y=0;y<ch;y++)for(let x=0;x<cw;x++){const i=(y*cw+x)*4,k=1+f.marl*((coarse(x,y)-.5)*.6+(fine(x,y)-.5)+(streak(x,y)-.5)*.7);mp[i]=Math.min(255,mp[i]*k);mp[i+1]=Math.min(255,mp[i+1]*k);mp[i+2]=Math.min(255,mp[i+2]*k);}
         mg.putImageData(md,0,0);}
       f.pattern=clothCtx.createPattern(m,'repeat');ok();};img.onerror=fail;img.src=f.texture;});
+    const ensureTexture=f=>f&&f.texture&&!f.pattern?loadTexture(f).catch(e=>{console.warn('Threadwork: texture failed, using plain stitches',f.name,e);f.texture=null;}):Promise.resolve();
     async function init(){
       for(const f of fonts)if(f.kit&&!f.pending){const l=document.createElement('link');l.rel='stylesheet';l.href=f.kit;document.head.append(l);}
-      try{await Promise.all([...fonts.filter(f=>!f.pending).map(f=>document.fonts.load(`180px "${f.family}"`)),...fabrics.filter(f=>f.texture).map(loadTexture)]);if(!(await document.fonts.load(fontSpec())).length)throw new Error('Font unavailable');drawCloth();makeGeometry();ready=true;updateControls();requestRender();$('loading').classList.add('done');centerCard();restoreFromUrl();}
+      try{await Promise.all([...fonts.filter(f=>!f.pending).map(f=>document.fonts.load(`180px "${f.family}"`)),ensureTexture(fabrics[state.fabric])]);if(!(await document.fonts.load(fontSpec())).length)throw new Error('Font unavailable');drawCloth();makeGeometry();ready=true;updateControls();requestRender();$('loading').classList.add('done');centerCard();restoreFromUrl();}
       catch(error){$('loading').textContent='The lettering could not load. Refresh to try again.';console.error(error);if(embed.mode==='product'&&summaryHost()&&summaryHost().querySelector('.tw-card--loading'))renderSummary();}
     }
     init();
