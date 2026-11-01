@@ -27,7 +27,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Standalone it is studio, overridable with ?mode=&product= for testing; the embed build replaces
     // these lines with the mount element's data-mode / data-product and its shadow root (default lab).
     const MODES=['studio','lab','product'];
-    const embed={mode:MODES.includes(MOUNT.dataset.mode)?MOUNT.dataset.mode:'lab',product:MOUNT.dataset.product||'',blanket:MOUNT.dataset.blanket||'',line:MOUNT.dataset.line||'',price:MOUNT.dataset.price||'',variant:MOUNT.dataset.variant||'',title:MOUNT.dataset.title||'',url:MOUNT.dataset.url||'',open:MOUNT.hasAttribute('data-open')};
+    const embed={mode:MODES.includes(MOUNT.dataset.mode)?MOUNT.dataset.mode:'lab',product:MOUNT.dataset.product||'',blanket:MOUNT.dataset.blanket||'',line:MOUNT.dataset.line||'',price:MOUNT.dataset.price||'',flow:MOUNT.dataset.flow||'',variant:MOUNT.dataset.variant||'',title:MOUNT.dataset.title||'',url:MOUNT.dataset.url||'',open:MOUNT.hasAttribute('data-open')};
     const root=SHADOW;
     const $ = id => root.getElementById(id);
     root.querySelector('.shell').dataset.mode=embed.mode;
@@ -113,7 +113,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const shell=root.querySelector('.shell'),isModal=()=>shell.dataset.mode==='product';let previewing=false;
     const card=root.querySelector('.card');
     const centerCard=()=>{if(!isModal()||shell.hidden)return;const pad=parseFloat(getComputedStyle(shell).paddingTop);card.style.marginTop=Math.max(0,(shell.clientHeight-2*pad-card.offsetHeight)/2)+'px';};
-    const openModal=()=>{if(!isModal())return;const host=root.host;if(host&&host.parentElement===document.body)document.body.append(host);shell.hidden=false;if(shell.showPopover){shell.setAttribute('popover','manual');try{shell.showPopover();}catch(e){}}document.body.style.overflow='hidden';relayout();centerCard();if(innerWidth>=920)setTimeout(()=>$('name').focus({preventScroll:true}),0);};
+    const openModal=()=>{if(!isModal())return;if(typeof announce==='function')announce('open');const host=root.host;if(host&&host.parentElement===document.body)document.body.append(host);shell.hidden=false;if(shell.showPopover){shell.setAttribute('popover','manual');try{shell.showPopover();}catch(e){}}document.body.style.overflow='hidden';relayout();centerCard();if(innerWidth>=920)setTimeout(()=>$('name').focus({preventScroll:true}),0);};
     const closeModal=()=>{if(!isModal())return;document.body.style.overflow='';card.style.marginTop='';if(typeof saved!=='undefined'&&saved&&!saving)restoreSaved();if(shell.hasAttribute('popover')){try{shell.hidePopover();}catch(e){}shell.removeAttribute('popover');}if(previewing){previewing=false;shell.dataset.mode=embed.mode;relayout();}else shell.hidden=true;};
     addEventListener('resize',centerCard);document.fonts.ready.then(centerCard);
     if(isModal()){shell.hidden=true;if(embed.open)openModal();}
@@ -940,7 +940,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         body.append('items[1][id]',embroideryId);body.append('items[1][quantity]',qty);
         body.append('items[1][properties][_for]',title);body.append('items[1][properties][_link]',link);
         body.append('items[1][properties][Embroidery Text]',text);body.append('items[1][properties][Thread Color]',threads[state.thread].name);body.append('items[1][properties][Font]',fonts[state.font].name);
-        body.append('items[1][properties][_image]',image);
+        body.append('items[1][properties][_image]',image);body.append('items[1][properties][_flow]',FLOW);
         const addUrl=(window.theme.urls&&window.theme.urls.cart_add?window.theme.urls.cart_add:'/cart/add')+'.js';
         const res=await fetch(addUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()});
         if(!res.ok){let msg=res.statusText;try{const j=await res.json();msg=j.description||j.message||msg;}catch(e){}throw new Error(msg);}
@@ -948,18 +948,23 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         await window.theme.cart.fetchTotals();
         await window.theme.cart.updateAllHtml(true);
         closeModal();
-        saved=null;renderSummary();
+        saved=null;renderSummary();announce('added',{letters:n,font:fonts[state.font].name,thread:threads[state.thread].name});
         window.theme.drawer.open('right','cart-drawer',document.querySelector('[data-threadwork-open]'));
       }catch(e){console.error('Threadwork: add to cart failed',e);toast('Could not add to cart: '+(e&&e.message||'please try again'));}
       finally{setBusy(false,btn);}
     }
     // ---- Save embroidery → summary card on the product page (Option B) ----
+    // Which flow this shopper gets: 'save' (Save embroidery → card → Add to cart) or 'direct' (Add to Cart in the modal).
+    // 'ab' assigns one at random per browser and remembers it; ?threadwork_flow=save|direct overrides for testing.
+    // The choice is stamped on the embroidery line as _flow so orders can be counted per bucket.
+    const FLOW=(()=>{let f=new URLSearchParams(location.search).get('threadwork_flow')||embed.flow||'save';if(f==='ab'){try{f=localStorage.getItem('threadwork-flow');if(f!=='save'&&f!=='direct'){f=Math.random()<.5?'save':'direct';localStorage.setItem('threadwork-flow',f);}}catch(e){f='save';}}return f==='direct'?'direct':'save';})();
+    const announce=(name,detail)=>{try{window.dispatchEvent(new CustomEvent('threadwork:'+name,{detail:Object.assign({flow:FLOW,product:embed.product},detail||{})}));if(Array.isArray(window.dataLayer))window.dataLayer.push(Object.assign({event:'threadwork_'+name,threadwork_flow:FLOW,threadwork_product:embed.product},detail||{}));}catch(e){}};
     const money=n=>'$'+n.toFixed(2);
     let saved=null,saving=false;
     const summaryHost=()=>document.getElementById('threadwork-summary');
     const SUMMARY_CSS='#threadwork-summary:empty{display:none}.tw-card{border:1px solid #dddcd3;border-radius:10px;padding:14px;display:flex;gap:14px;align-items:center;background:#faf9f5;margin-bottom:12px;text-transform:none}.tw-thumb{width:150px;height:68px;border-radius:6px;object-fit:cover;flex-shrink:0;display:block}.tw-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:13px;line-height:1.35;color:#5a6358}.tw-meta b{font-weight:600;color:#293d35;font-size:13px}.tw-meta strong{color:#222}.tw-links{display:flex;flex-direction:column;gap:6px;align-items:flex-end}.tw-links button{background:none;border:0;padding:0;font:inherit;font-size:12px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;color:#293d35;min-height:0;line-height:1.4}.tw-links .tw-remove{color:#8c9386}.tw-add{width:100%;height:62px;border:0;border-radius:5px;background:#aa7a73;color:#fff;font:500 18px "Sofia Pro",Helvetica,Arial,sans-serif;text-transform:uppercase;letter-spacing:1px;cursor:pointer}.tw-add[disabled]{opacity:.7;cursor:default}.tw-hint{margin:6px 0 12px;text-align:center;font-size:11px;color:#8c9386;text-transform:none}@media(max-width:399px){.tw-card{flex-direction:column;align-items:stretch;gap:12px}.tw-thumb{width:100%;height:auto;aspect-ratio:800/360}.tw-links{flex-direction:row;justify-content:flex-end;gap:16px}}';
     if(embed.mode==='product'){
-      cartButton.textContent='Save embroidery';cartButton.dataset.idle='Save embroidery';
+      cartButton.textContent=FLOW==='direct'?'Add to Cart':'Save embroidery';cartButton.dataset.idle=cartButton.textContent;
       if(!document.getElementById('threadwork-summary-css')){const st=document.createElement('style');st.id='threadwork-summary-css';st.textContent=SUMMARY_CSS;document.head.append(st);}
     }
     const escapeHtml=t=>t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -979,11 +984,11 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       if(!ready)return;const n=letters(state.text);if(!n){toast('Type a name first.');return;}
       clearTimeout(debounce);cancelAnimationFrame(raf);makeGeometry();renderArtwork();
       saved={text:state.text.trim(),font:state.font,thread:state.thread,fabric:state.fabric,n,thumb:snapshotJpeg()};
-      saving=true;closeModal();saving=false;renderSummary();
+      saving=true;closeModal();saving=false;renderSummary();announce('saved',{letters:n});
     }
     // Closing without saving puts the modal back to what the card shows.
     function restoreSaved(){if(!saved)return;state.text=saved.text;$('name').value=saved.text;state.font=saved.font;state.thread=saved.thread;updateControls();makeGeometry();requestRender();}
-    cartButton.addEventListener('click',()=>{if(embed.mode==='product'&&!previewing)saveEmbroidery();else if(canSell())addToCart();});
+    cartButton.addEventListener('click',()=>{if(embed.mode==='product'&&!previewing&&FLOW==='save')saveEmbroidery();else if(canSell())addToCart();});
     addEventListener('theme:cart:updated',()=>setBusy(false));
     // A knit texture is pushed to the blanket's catalogue colour (per-channel gain on its
     // average), then cropped to the size at which its right edge best continues its left edge
@@ -1027,7 +1032,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       catch(error){$('loading').textContent='The lettering could not load. Refresh to try again.';console.error(error);}
     }
     init();
-window.Threadwork={mode:embed.mode,product:embed.product,root:SHADOW,open:openModal,close:closeModal};
+window.Threadwork={mode:embed.mode,product:embed.product,flow:typeof FLOW==='undefined'?'':FLOW,root:SHADOW,open:openModal,close:closeModal};
 };
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
