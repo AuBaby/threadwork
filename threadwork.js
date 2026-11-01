@@ -8,6 +8,8 @@ const HTML="<div class=\"shell\">\n    <div class=\"card\"><main class=\"studio\
 const start=()=>{
 const MOUNT=document.getElementById('threadwork')||document.querySelector('[data-threadwork]');
 if(!MOUNT||MOUNT.shadowRoot)return;
+// A modal must escape the theme's wrappers: a transformed or filtered ancestor would trap position:fixed inside it.
+if(MOUNT.dataset.mode==='product'&&MOUNT.parentElement!==document.body)document.body.append(MOUNT);
 if(!document.getElementById('threadwork-fonts')){const s=document.createElement('style');s.id='threadwork-fonts';s.textContent=FONTS.replaceAll('./assets/',ASSETS);document.head.append(s);}
 const SHADOW=MOUNT.attachShadow({mode:'open'});
 SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
