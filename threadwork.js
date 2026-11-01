@@ -21,12 +21,13 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Who is looking at the page. `embed.mode` is one of:
     //   studio  — this standalone page and the Claude artifact (design work; shows the Advanced switch)
     //   lab     — the store's embroidery lab page
-    //   product — a store product page; `embed.product` is then the product handle and `embed.blanket`
-    //             the blanket colour name ("Moon Stone", "moon-stone"…); the blanket row is hidden there
+    //   product — a store product page; `embed.product` is then the product handle, `embed.line` the product
+    //             line ('sawa'; Popcorn later) and `embed.blanket` the colour name ("Moon Stone", "moon-stone"…);
+    //             the blanket row is hidden there. Which products get the button is decided in the Liquid block.
     // Standalone it is studio, overridable with ?mode=&product= for testing; the embed build replaces
     // these lines with the mount element's data-mode / data-product and its shadow root (default lab).
     const MODES=['studio','lab','product'];
-    const embed={mode:MODES.includes(MOUNT.dataset.mode)?MOUNT.dataset.mode:'lab',product:MOUNT.dataset.product||'',blanket:MOUNT.dataset.blanket||'',variant:MOUNT.dataset.variant||'',title:MOUNT.dataset.title||'',url:MOUNT.dataset.url||'',open:MOUNT.hasAttribute('data-open')};
+    const embed={mode:MODES.includes(MOUNT.dataset.mode)?MOUNT.dataset.mode:'lab',product:MOUNT.dataset.product||'',blanket:MOUNT.dataset.blanket||'',line:MOUNT.dataset.line||'',variant:MOUNT.dataset.variant||'',title:MOUNT.dataset.title||'',url:MOUNT.dataset.url||'',open:MOUNT.hasAttribute('data-open')};
     const root=SHADOW;
     const $ = id => root.getElementById(id);
     root.querySelector('.shell').dataset.mode=embed.mode;
@@ -45,9 +46,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // With `texture` the cloth is that cleaned-up knit image, shadows lifted (`lift`, default .28; negative deepens them), colour-matched
       // to `hex` (greyed first when `neutral`) and repeated at `scale`;
       // without one the cloth is drawn as seed stitch.
-      { name:'Pink Quartz', hex:'#f5aab9', image:ASSETS+'fabrics/pink-quartz.webp', texture:ASSETS+'fabrics/pink-quartz.webp', scale:.425 }, { name:'Henna', hex:'#d1a180', image:ASSETS+'fabrics/henna.webp', texture:ASSETS+'fabrics/henna.webp', scale:.425 },
-      { name:'Moon Stone', hex:'#aba8a7', image:ASSETS+'fabrics/moon-stone.webp', texture:ASSETS+'fabrics/pink-quartz.webp', neutral:true, lift:-.35, marl:.2, scale:.425 }, { name:'Sky Blue', hex:'#8da6c7', image:ASSETS+'fabrics/sky-blue.webp', texture:ASSETS+'fabrics/sky-blue.webp', scale:.425 },
-      { name:'Citron', hex:'#ded693', image:ASSETS+'fabrics/citron.webp', texture:ASSETS+'fabrics/citron.webp', scale:.425 }
+      { name:'Pink Quartz', hex:'#f5aab9', image:ASSETS+'fabrics/pink-quartz.webp', texture:ASSETS+'fabrics/pink-quartz.webp', scale:.425, line:'sawa' }, { name:'Henna', hex:'#d1a180', image:ASSETS+'fabrics/henna.webp', texture:ASSETS+'fabrics/henna.webp', scale:.425, line:'sawa' },
+      { name:'Moon Stone', hex:'#aba8a7', image:ASSETS+'fabrics/moon-stone.webp', texture:ASSETS+'fabrics/pink-quartz.webp', neutral:true, lift:-.35, marl:.2, scale:.425, line:'sawa' }, { name:'Sky Blue', hex:'#8da6c7', image:ASSETS+'fabrics/sky-blue.webp', texture:ASSETS+'fabrics/sky-blue.webp', scale:.425, line:'sawa' },
+      { name:'Citron', hex:'#ded693', image:ASSETS+'fabrics/citron.webp', texture:ASSETS+'fabrics/citron.webp', scale:.425, line:'sawa' }
     ];
     const fonts = [
       // Petit is a non-connecting script: each letter carries its own entry
@@ -63,7 +64,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     ];
     const state = { text:'', font:0, thread:0, fabric:0, weight:5, length:10, guide:false, advanced:false, zoom:1, panX:0, panY:0 };
     // A named blanket (from the product page) wins over the default; unknown names fall back to it.
-    {const want=embed.blanket.toLowerCase().replace(/[^a-z]/g,'');const i=fabrics.findIndex(f=>f.name.toLowerCase().replace(/[^a-z]/g,'')===want);if(i>=0)state.fabric=i;}
+    {const norm=t=>t.toLowerCase().replace(/[^a-z]/g,''),want=norm(embed.blanket);const match=f=>norm(f.name)===want;let i=embed.line?fabrics.findIndex(f=>f.line===embed.line&&match(f)):-1;if(i<0)i=fabrics.findIndex(match);if(i>=0)state.fabric=i;}
     // Every measurement, raster and guide uses the chosen face at 180 px,
     // with the face's own tracking (a non-connecting script sits tighter).
     const fontSpec = () => `180px "${fonts[state.font].family}"`;
