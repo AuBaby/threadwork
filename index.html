@@ -4,12 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Threadwork embed</title>
-<style>body{margin:0;background:#f5f3ed}</style>
+<style>body{margin:0;background:#f5f3ed;font:16px 'Sofia Pro',Helvetica,Arial,sans-serif;color:#293d35}.fake-product{max-width:720px;margin:48px auto;padding:0 24px;display:none}.fake-product button{font:inherit;padding:14px 26px;border:0;border-radius:5px;background:#aa7a73;color:#fff;text-transform:uppercase;letter-spacing:.5px;cursor:pointer}body[data-mode=product] .fake-product{display:block}</style>
 </head>
 <body>
-<!-- Same two lines the Shopify theme carries. ?mode=product&product=<handle> on this page sets the flags for testing. -->
+<!-- Stand-in for a product page: only shown in product mode, where the studio is a modal opened by this button. -->
+<div class="fake-product"><h1>Cashmere Blanket</h1><p>Soft as a cloud. Add a name in hand-stitched thread.</p><button data-threadwork-open>Add hand embroidery</button></div>
+<!-- Same two lines the Shopify theme carries. ?mode=product&product=<handle>&open on this page sets the flags for testing. -->
 <div id="threadwork" data-mode="lab" data-product=""></div>
-<script>(q=>{const m=document.getElementById('threadwork');if(q.get('mode'))m.dataset.mode=q.get('mode');if(q.get('product'))m.dataset.product=q.get('product');})(new URLSearchParams(location.search));</script>
+<script>(q=>{const m=document.getElementById('threadwork');if(q.get('mode'))m.dataset.mode=q.get('mode');if(q.get('product'))m.dataset.product=q.get('product');if(q.has('open'))m.dataset.open='';document.body.dataset.mode=m.dataset.mode;})(new URLSearchParams(location.search));</script>
 <script src="./threadwork.js" defer></script>
 </body>
 </html>
