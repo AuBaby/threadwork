@@ -38,6 +38,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const announce=(name,detail)=>{try{window.dispatchEvent(new CustomEvent('threadwork:'+name,{detail:Object.assign({flow:FLOW,product:embed.product},detail||{})}));if(Array.isArray(window.dataLayer))window.dataLayer.push(Object.assign({event:'threadwork_'+name,threadwork_flow:FLOW,threadwork_product:embed.product},detail||{}));}catch(e){}};
     const money=n=>'$'+n.toFixed(2);
     let saved=null,saving=false;
+  const syncQuiet=async()=>{const t=document.querySelector('[data-threadwork-open]');if(!t||!canSell())return;try{const c=await (await fetch('/cart.js',{credentials:'same-origin'})).json();const has=(c.items||[]).some(i=>/The Sawa Blanket/i.test(i.product_title||'')||/Custom Hand Embroidery/i.test(i.product_title||''));if(has)t.dataset.quiet='1';else delete t.dataset.quiet;}catch(e){}};
+  document.addEventListener('theme:cart:updated',()=>syncQuiet());
     // The twelve thread colours offered on the store.
     const threads = [
       { name:'White', hex:'#ffffff' }, { name:'Cream', hex:'#fafaeb', yarn:'#e9dfc0' },
@@ -963,7 +965,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         // Sold. Whatever happens below, the lines are in the cart.
         try{await uploaded;await window.theme.cart.fetchTotals();await window.theme.cart.updateAllHtml(true);}catch(e){console.error('Threadwork: cart refresh after add failed',e);}
         closeModal();
-        {const t=document.querySelector('[data-threadwork-open]');if(t)t.dataset.quiet='1';try{sessionStorage.setItem('threadwork-quiet','1');}catch(e){}}
+        {const t=document.querySelector('[data-threadwork-open]');if(t)t.dataset.quiet='1';}
         saved=null;renderSummary();announce('added',withEmbroidery?{letters:n,font:fonts[state.font].name,thread:threads[state.thread].name}:{letters:0});
         try{window.theme.drawer.open('right','cart-drawer',document.querySelector('[data-threadwork-open]'));}catch(e){location.href='/cart';}
       }catch(e){console.error('Threadwork: add to cart failed',e);notify('Could not add to cart: '+(e&&e.message||'please try again'));}
@@ -974,7 +976,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const SUMMARY_CSS='#threadwork-summary:empty{display:none}.tw-card{border:1px solid #dddcd3;border-radius:10px;padding:14px;display:flex;gap:14px;align-items:center;background:#faf9f5;margin-bottom:12px;text-transform:none}.tw-thumb{width:150px;height:68px;border-radius:6px;object-fit:cover;flex-shrink:0;display:block}.tw-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:13px;line-height:1.35;color:#5a6358}.tw-meta b{font-weight:600;color:#293d35;font-size:13px}.tw-meta strong{color:#222}.tw-links{display:flex;flex-direction:column;gap:6px;align-items:flex-end}.tw-links button{background:none;border:0;padding:0;font:inherit;font-size:12px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;color:#293d35;min-height:0;line-height:1.4}.tw-links .tw-remove{color:#8c9386}.tw-add{width:100%;height:62px;border:0;border-radius:5px;background:#aa7a73;color:#fff;font:17px "Gopher Bold",Georgia,serif;text-transform:uppercase;letter-spacing:1px;cursor:pointer}.tw-add[disabled]{opacity:.7;cursor:default}.tw-spin{display:inline-block;width:15px;height:15px;margin-left:5px;vertical-align:-2px;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;animation:tw-spin .8s linear infinite}@keyframes tw-spin{to{transform:rotate(360deg)}}.tw-error{margin:8px 0 12px;text-align:center;font-size:12px;color:#9c2a2c;text-transform:none}[data-threadwork-open][hidden]{display:none!important}[data-threadwork-open]:not([hidden]){animation:tw-wiggle 30s ease-in-out 8s infinite;transform-origin:50% 50%}[data-threadwork-open][data-quiet]{animation:none!important}@keyframes tw-wiggle{0%,5%,100%{transform:none}1%{transform:rotate(-1.5deg) scale(1.015)}2%{transform:rotate(1.5deg) scale(1.015)}3%{transform:rotate(-.9deg) scale(1.008)}4%{transform:rotate(.45deg)}}.tw-add .tw-price{font-size:1.08em;line-height:1}.tw-add{margin-bottom:12px}.tw-hint{margin:6px 0 12px;text-align:center;font-size:11px;color:#8c9386;text-transform:none}@media(max-width:399px){.tw-card{flex-direction:column;align-items:stretch;gap:12px}.tw-thumb{width:100%;height:auto;aspect-ratio:800/360}.tw-links{flex-direction:row;justify-content:flex-end;gap:16px}}';
     if(embed.mode==='product'){
       cartButton.textContent=FLOW==='direct'?'Add to Cart':'Save embroidery';cartButton.dataset.idle=cartButton.textContent;
-      {const t=document.querySelector('[data-threadwork-open]');if(t){t.hidden=false;try{if(sessionStorage.getItem('threadwork-quiet'))t.dataset.quiet='1';}catch(e){}}}
+      {const t=document.querySelector('[data-threadwork-open]');if(t){t.hidden=false;syncQuiet();}}
       renderSummary();
       if(!document.getElementById('threadwork-summary-css')){const st=document.createElement('style');st.id='threadwork-summary-css';st.textContent=SUMMARY_CSS;document.head.append(st);}
     }
