@@ -912,6 +912,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Full width, cropped to a band centred on the lettering (720 of the 1150 canvas rows), scaled to 800×360.
     function snapshotJpeg(){const band=720,top=Math.max(0,Math.min(H-band,Math.round(letterY()-band/2)));const c=document.createElement('canvas');c.width=800;c.height=360;c.getContext('2d').drawImage(artwork,0,top,W,band,0,0,800,360);return c.toDataURL('image/jpeg',.88);}
     // Resolves true when the file is up; false on failure or after 8 s, so a slow upload never blocks the sale.
+    // Card thumbnail: a tight crop around the lettering (2.2:1, same as the card's image box), so the name reads at a glance.
+    function thumbJpeg(){if(!geometry)return snapshotJpeg();const sc=Math.min(980/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);const lw=geometry.width*sc,lh=geometry.height*sc;let cw=Math.max(lw*1.3,lh*1.4*2.2,420);cw=Math.min(cw,W);let ch=cw/2.2;if(ch>H){ch=H;cw=ch*2.2;}const cx=W/2,cy=letterY();const x=Math.max(0,Math.min(W-cw,cx-cw/2)),y=Math.max(0,Math.min(H-ch,cy-ch/2));const c=document.createElement('canvas');c.width=600;c.height=273;c.getContext('2d').drawImage(artwork,x,y,cw,ch,0,0,600,273);return c.toDataURL('image/jpeg',.86);}
     async function uploadSnapshot(id){const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);try{const r=await fetch(UPLOAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:snapshotJpeg(),fileName:id+'.jpg'}),signal:ctl.signal});if(!r.ok)throw new Error(r.status);return true;}catch(e){console.error('Threadwork: snapshot upload failed',e);return false;}finally{clearTimeout(timer);}}
     const cartButton=$('download');
     const setBusy=(on,btn=cartButton)=>{btn.disabled=on;btn.setAttribute('aria-busy',String(on));btn.innerHTML=on?'Adding…':(btn.dataset.idle||'Add to Cart');};
@@ -983,7 +985,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     function saveEmbroidery(){
       if(!ready)return;const n=letters(state.text);if(!n){toast('Type a name first.');return;}
       clearTimeout(debounce);cancelAnimationFrame(raf);makeGeometry();renderArtwork();
-      saved={text:state.text.trim(),font:state.font,thread:state.thread,fabric:state.fabric,n,thumb:snapshotJpeg()};
+      saved={text:state.text.trim(),font:state.font,thread:state.thread,fabric:state.fabric,n,thumb:thumbJpeg()};
       saving=true;closeModal();saving=false;renderSummary();announce('saved',{letters:n});
     }
     // Closing without saving puts the modal back to what the card shows.
