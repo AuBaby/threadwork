@@ -911,7 +911,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // The unzoomed render, scaled down; zoom and pan only ever touch the on-screen copy.
     // Full width, cropped to a band centred on the lettering (720 of the 1150 canvas rows), scaled to 800×360.
     // A 2.2:1 window around the lettering: a little wider than the name, so long names fill it and short names aren't lost in knit.
-    function cropRect(){if(!geometry){const ch=720;return{x:0,y:Math.max(0,Math.min(H-ch,Math.round(letterY()-ch/2))),cw:W,ch};}const sc=Math.min(980/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);const lw=geometry.width*sc,lh=geometry.height*sc;let cw=Math.max(lw*1.22,lh*1.5*2.2,380);cw=Math.min(cw,W);let ch=cw/2.2;if(ch>H){ch=H;cw=ch*2.2;}const cx=W/2,cy=letterY();return{x:Math.max(0,Math.min(W-cw,cx-cw/2)),y:Math.max(0,Math.min(H-ch,cy-ch/2)),cw,ch};}
+    // The stitches' real pixel bounds: the embroidery is drawn alone on a cleared canvas, its alpha scanned, then the artwork redrawn.
+    function inkBounds(){if(!geometry||!paths.length)return null;artwork.width=W;drawEmbroidery();const d=art.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y+=2){for(let x=0;x<W;x+=2){if(d[(y*W+x)*4+3]>40){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}}}renderArtwork();return x1<0?null:{x0,y0,x1,y1};}
+    function cropRect(){const b=inkBounds();if(!b){const ch=720;return{x:0,y:Math.max(0,Math.min(H-ch,Math.round(letterY()-ch/2))),cw:W,ch};}const bw=b.x1-b.x0,bh=b.y1-b.y0,cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2;let cw=Math.max(bw+Math.max(bw*.24,80),(bh+Math.max(bh*.6,60))*2.2,360);cw=Math.min(cw,W);let ch=cw/2.2;if(ch>H){ch=H;cw=ch*2.2;}return{x:Math.max(0,Math.min(W-cw,cx-cw/2)),y:Math.max(0,Math.min(H-ch,cy-ch/2)),cw,ch};}
     function cropJpeg(w,h,q){const r=cropRect(),c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(artwork,r.x,r.y,r.cw,r.ch,0,0,w,h);return c.toDataURL('image/jpeg',q);}
     function snapshotJpeg(){return cropJpeg(1000,455,.88);}
     // Resolves true when the file is up; false on failure or after 8 s, so a slow upload never blocks the sale.
