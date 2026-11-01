@@ -59,17 +59,17 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       { name:'Moon Stone', hex:'#aba8a7', image:ASSETS+'fabrics/moon-stone.webp', texture:ASSETS+'fabrics/pink-quartz.webp', neutral:true, lift:-.35, marl:.2, scale:.425, line:'sawa' }, { name:'Sky Blue', hex:'#8da6c7', image:ASSETS+'fabrics/sky-blue.webp', texture:ASSETS+'fabrics/sky-blue.webp', scale:.425, line:'sawa' },
       { name:'Citron', hex:'#ded693', image:ASSETS+'fabrics/citron.webp', texture:ASSETS+'fabrics/citron.webp', scale:.425, line:'sawa' },
       // Popcorn (baby + adult). Moon Stone has no photo yet and falls back to the Sawa knit by name.
-      { name:'Pink Quartz', hex:'#eeb0bc', image:ASSETS+'fabrics/popcorn-pink-quartz.webp', texture:ASSETS+'fabrics/popcorn-pink-quartz.webp', scale:.38, line:'popcorn' }, { name:'Henna', hex:'#d5a788', image:ASSETS+'fabrics/popcorn-henna.webp', texture:ASSETS+'fabrics/popcorn-henna.webp', scale:.38, line:'popcorn' },
-      { name:'Sky Blue', hex:'#8b9eb6', image:ASSETS+'fabrics/popcorn-sky-blue.webp', texture:ASSETS+'fabrics/popcorn-sky-blue.webp', scale:.45, line:'popcorn' }, { name:'Citron', hex:'#e6e195', image:ASSETS+'fabrics/popcorn-citron.webp', texture:ASSETS+'fabrics/popcorn-citron.webp', scale:.38, line:'popcorn' },
-      { name:'Cream', hex:'#c2baa8', image:ASSETS+'fabrics/popcorn-cream.webp', texture:ASSETS+'fabrics/popcorn-cream.webp', scale:.45, line:'popcorn' },
+      { name:'Pink Quartz', hex:'#eeb0bc', image:ASSETS+'fabrics/popcorn-pink-quartz.webp', texture:ASSETS+'fabrics/popcorn-pink-quartz.webp', photo:true, scale:.38, line:'popcorn' }, { name:'Henna', hex:'#d5a788', image:ASSETS+'fabrics/popcorn-henna.webp', texture:ASSETS+'fabrics/popcorn-henna.webp', photo:true, scale:.38, line:'popcorn' },
+      { name:'Sky Blue', hex:'#8b9eb6', image:ASSETS+'fabrics/popcorn-sky-blue.webp', texture:ASSETS+'fabrics/popcorn-sky-blue.webp', photo:true, scale:.45, line:'popcorn' }, { name:'Citron', hex:'#e6e195', image:ASSETS+'fabrics/popcorn-citron.webp', texture:ASSETS+'fabrics/popcorn-citron.webp', photo:true, scale:.38, line:'popcorn' },
+      { name:'Cream', hex:'#c2baa8', image:ASSETS+'fabrics/popcorn-cream.webp', texture:ASSETS+'fabrics/popcorn-cream.webp', photo:true, scale:.45, line:'popcorn' },
       // Little Love cashmere + the Cashmere Cloud gift sets (same knit). 'Peony Pink' is the gift set's name for Peony.
-      { name:'Butter Cream', hex:'#b7a698', image:ASSETS+'fabrics/cashmere-butter-cream.jpg', texture:ASSETS+'fabrics/cashmere-butter-cream.jpg', scale:.5, line:'cashmere' }, { name:'Cloud', hex:'#c6beb2', image:ASSETS+'fabrics/cashmere-cloud.jpg', texture:ASSETS+'fabrics/cashmere-cloud.jpg', scale:.5, line:'cashmere' },
-      { name:'Hydrangea', hex:'#b2c0ca', image:ASSETS+'fabrics/cashmere-hydrangea.jpg', texture:ASSETS+'fabrics/cashmere-hydrangea.jpg', scale:.5, line:'cashmere' }, { name:'Lavande', hex:'#d7bada', image:ASSETS+'fabrics/cashmere-lavande.jpg', texture:ASSETS+'fabrics/cashmere-lavande.jpg', scale:.5, line:'cashmere' },
-      { name:'Peony', aka:['Peony Pink'], hex:'#d7b5b0', image:ASSETS+'fabrics/cashmere-peony.webp', texture:ASSETS+'fabrics/cashmere-peony.webp', scale:.5, line:'cashmere' },
+      { name:'Butter Cream', hex:'#b7a698', image:ASSETS+'fabrics/cashmere-butter-cream.jpg', texture:ASSETS+'fabrics/cashmere-butter-cream.jpg', photo:true, scale:.5, line:'cashmere' }, { name:'Cloud', hex:'#c6beb2', image:ASSETS+'fabrics/cashmere-cloud.jpg', texture:ASSETS+'fabrics/cashmere-cloud.jpg', photo:true, scale:.5, line:'cashmere' },
+      { name:'Hydrangea', hex:'#b2c0ca', image:ASSETS+'fabrics/cashmere-hydrangea.jpg', texture:ASSETS+'fabrics/cashmere-hydrangea.jpg', photo:true, scale:.5, line:'cashmere' }, { name:'Lavande', hex:'#d7bada', image:ASSETS+'fabrics/cashmere-lavande.jpg', texture:ASSETS+'fabrics/cashmere-lavande.jpg', photo:true, scale:.5, line:'cashmere' },
+      { name:'Peony', aka:['Peony Pink'], hex:'#d7b5b0', image:ASSETS+'fabrics/cashmere-peony.webp', texture:ASSETS+'fabrics/cashmere-peony.webp', photo:true, scale:.5, line:'cashmere' },
       // Kid + Adult beanies (rib photos, placeholder).
-      { name:'Charcoal', hex:'#4b4b54', image:ASSETS+'fabrics/beanie-charcoal.webp', texture:ASSETS+'fabrics/beanie-charcoal.webp', crop:[.15,.05,.7,.5], scale:.3, line:'beanie' }, { name:'Chocolate', hex:'#552b20', image:ASSETS+'fabrics/beanie-chocolate.webp', texture:ASSETS+'fabrics/beanie-chocolate.webp', crop:[.15,.05,.7,.5], scale:.3, line:'beanie' },
-      { name:'Cobalt', hex:'#263074', image:ASSETS+'fabrics/beanie-cobalt.webp', texture:ASSETS+'fabrics/beanie-cobalt.webp', crop:[.15,.05,.7,.5], scale:.3, line:'beanie' }, { name:'Lavande', hex:'#ad8eab', image:ASSETS+'fabrics/beanie-lavande.webp', texture:ASSETS+'fabrics/beanie-lavande.webp', crop:[.15,.05,.7,.5], scale:.3, line:'beanie' },
-      { name:'Pink Haze', hex:'#ce7980', image:ASSETS+'fabrics/beanie-pink-haze.webp', texture:ASSETS+'fabrics/beanie-pink-haze.webp', crop:[.15,.05,.7,.5], scale:.3, line:'beanie' }
+      { name:'Charcoal', hex:'#4b4b54', image:ASSETS+'fabrics/beanie-charcoal.webp', texture:ASSETS+'fabrics/beanie-charcoal.webp', photo:true, scale:.3, line:'beanie' }, { name:'Chocolate', hex:'#552b20', image:ASSETS+'fabrics/beanie-chocolate.webp', texture:ASSETS+'fabrics/beanie-chocolate.webp', photo:true, scale:.3, line:'beanie' },
+      { name:'Cobalt', hex:'#263074', image:ASSETS+'fabrics/beanie-cobalt.webp', texture:ASSETS+'fabrics/beanie-cobalt.webp', photo:true, scale:.3, line:'beanie' }, { name:'Lavande', hex:'#ad8eab', image:ASSETS+'fabrics/beanie-lavande.webp', texture:ASSETS+'fabrics/beanie-lavande.webp', photo:true, scale:.3, line:'beanie' },
+      { name:'Pink Haze', hex:'#ce7980', image:ASSETS+'fabrics/beanie-pink-haze.webp', texture:ASSETS+'fabrics/beanie-pink-haze.webp', photo:true, scale:.3, line:'beanie' }
     ];
     const fonts = [
       // Petit is a non-connecting script: each letter carries its own entry
@@ -177,7 +177,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
           for(let f=0;f<7;f++){t.strokeStyle=color(base,f<4?52:-30,.12+r()*.16);t.lineWidth=.3+r()*.2;t.beginPath();const x0=cx-w*.9+r()*w*1.8,y0=cy-py*.5+r()*py,ang=tilt+(r()-.5)*1.4,len=3+r()*6;t.moveTo(x0,y0);t.lineTo(x0+Math.cos(ang)*len,y0+Math.sin(ang)*len);t.stroke();}
         }
       clothCtx.fillStyle=base;clothCtx.fillRect(0,0,W,H);
-      if(fabric.pattern){clothCtx.save();clothCtx.scale(fabric.scale,fabric.scale);clothCtx.fillStyle=fabric.pattern;clothCtx.fillRect(0,0,W/fabric.scale,H/fabric.scale);clothCtx.restore();clothCtx.fillStyle=color(base,0,.12);clothCtx.fillRect(0,0,W,H);}
+      if(fabric.photoCanvas){const p=fabric.photoCanvas,k=Math.max(W/p.width,H/p.height),dw=p.width*k,dh=p.height*k;clothCtx.drawImage(p,(W-dw)/2,(H-dh)/2,dw,dh);}
+      else if(fabric.pattern){clothCtx.save();clothCtx.scale(fabric.scale,fabric.scale);clothCtx.fillStyle=fabric.pattern;clothCtx.fillRect(0,0,W/fabric.scale,H/fabric.scale);clothCtx.restore();clothCtx.fillStyle=color(base,0,.12);clothCtx.fillRect(0,0,W,H);}
       else{clothCtx.save();clothCtx.translate(W/2,H/2);clothCtx.rotate(-.047);clothCtx.scale(1.12,1.12);clothCtx.fillStyle=clothCtx.createPattern(tile,'repeat');clothCtx.fillRect(-W,-H,W*2,H*2);clothCtx.restore();}
       let g=clothCtx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#fffcdf28');g.addColorStop(.35,'#ffffff10');g.addColorStop(.72,'#1d17200b');g.addColorStop(1,'#2716221f');clothCtx.fillStyle=g;clothCtx.fillRect(0,0,W,H);
       g=clothCtx.createRadialGradient(W*.37,H*.36,50,W*.5,H*.5,W*.7);g.addColorStop(0,'#fffae810');g.addColorStop(1,'#20182518');clothCtx.fillStyle=g;clothCtx.fillRect(0,0,W,H);
@@ -1025,7 +1026,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // average), then cropped to the size at which its right edge best continues its left edge
     // (and bottom its top), so the lattice lines up across the repeat.
     const loadTexture=f=>new Promise((ok,fail)=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{
-      const cr=f.crop||[0,0,1,1],sx=Math.round(img.width*cr[0]),sy=Math.round(img.height*cr[1]),w=Math.round(img.width*cr[2]),h=Math.round(img.height*cr[3]),c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(img,sx,sy,w,h,0,0,w,h);
+      const cr=f.crop||[0,0,1,1],sx=Math.round(img.width*cr[0]),sy=Math.round(img.height*cr[1]),w=Math.round(img.width*cr[2]),h=Math.round(img.height*cr[3]),c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(img,sx,sy,w,h,0,0,w,h);if(f.photo){f.photoCanvas=c;ok();return;}
       const d=g.getImageData(0,0,w,h),px=d.data,n=px.length/4,lum=i=>.299*px[i]+.587*px[i+1]+.114*px[i+2];
       // A `neutral` texture is greyed first so it can be tinted to any blanket colour (Moon Stone borrows the pink tile).
       if(f.neutral)for(let i=0;i<px.length;i+=4)px[i]=px[i+1]=px[i+2]=lum(i);
