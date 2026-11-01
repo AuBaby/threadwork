@@ -888,7 +888,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     function drawView(){art.getImageData(0,0,1,1);ctx.save();ctx.clearRect(0,0,W,H);ctx.fillStyle=fabrics[state.fabric].hex;ctx.fillRect(0,0,W,H);ctx.translate(W/2+state.panX,H/2+state.panY);ctx.scale(state.zoom,state.zoom);ctx.drawImage(artwork,-W/2,-H/2);ctx.restore();}
     // Spaces are free: the 20-character limit counts letters only, and so does the price.
     const PRICE_PER_LETTER=10;
-    const STITCHABLE=/[^\p{L}\p{N} .,'&-]/gu;const clean=text=>text.replace(STITCHABLE,'');const letters=text=>[...clean(text).replace(/\s/g,'')].length;
+    const STITCHABLE=/[^\p{L}\p{N} .,'&-]/gu;const clean=text=>text.replace(STITCHABLE,'').replace(/ {2,}/g,' ');const letters=text=>[...clean(text).replace(/\s/g,'')].length;
     $('name').addEventListener('input',e=>{const v=clean(e.target.value);if(v!==e.target.value)e.target.value=v;if(letters(v)>20){e.target.value=state.text;return;}state.text=v;updateControls();clearTimeout(debounce);debounce=setTimeout(()=>{makeGeometry();requestRender();},40);});
     for(const key of ['weight','length'])$(key).addEventListener('input',e=>{state[key]=+e.target.value;updateControls();requestRender();});
     $('advanced').addEventListener('click',()=>{state.advanced=!state.advanced;updateControls();});
