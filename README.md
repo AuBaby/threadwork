@@ -23,6 +23,8 @@ Only Sawa blankets have knits in the studio so far, so the block is wrapped in a
 
 In product mode the studio is a modal over a dimmed page. Any element with `data-threadwork-open` opens it; the X, Escape, or a click on the dim area closes it. Add `data-open` to the div to start open. `window.Threadwork` exposes `{mode, product, root, open(), close()}`.
 
+The modal's button is **Save embroidery**. Saving closes the modal and renders a summary card into `<div id="threadwork-summary"></div>` (put it right after the trigger): preview, text, font, thread, letter count and price, with Modify and Remove, followed by the script's own "Add to cart · $total" button (the blanket price comes from `data-price`, in cents). While a card is showing, the trigger and the theme's own `.product-buy-buttons--root` are hidden; Remove or a successful add brings them back. The add posts the blanket plus the matching "N Letters" variant of Custom Hand Embroidery with the `_for`, `_link`, `Embroidery Text`, `Thread Color`, `Font` and `_image` properties, uploads the render snapshot, then opens the cart drawer.
+
 - `data-mode` says who is looking: `lab` (default) or `product`. A third value, `studio`, is the design view with the Advanced switch; the store never uses it.
 - `data-product` is the product handle in product mode.
 - `data-variant`, `data-title`, `data-url`: the product's variant id, title and canonical URL. Add to Cart adds that variant plus the matching "N Letters" variant of Custom Hand Embroidery with the `_for`, `_link`, `Embroidery Text`, `Thread Color`, `Font` and `_image` properties, uploads a snapshot of the render for the cart, then opens the cart drawer.
