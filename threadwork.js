@@ -929,7 +929,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       f.pattern=clothCtx.createPattern(m,'repeat');ok();};img.onerror=fail;img.src=f.texture;});
     async function init(){
       for(const f of fonts)if(f.kit&&!f.pending){const l=document.createElement('link');l.rel='stylesheet';l.href=f.kit;document.head.append(l);}
-      try{await Promise.all([...fonts.filter(f=>!f.pending).map(f=>document.fonts.load(`180px "${f.family}"`)),...fabrics.filter(f=>f.texture).map(loadTexture)]);if(!document.fonts.check(fontSpec()))throw new Error('Font unavailable');drawCloth();makeGeometry();ready=true;updateControls();requestRender();$('loading').classList.add('done');}
+      try{await Promise.all([...fonts.filter(f=>!f.pending).map(f=>document.fonts.load(`180px "${f.family}"`)),...fabrics.filter(f=>f.texture).map(loadTexture)]);if(!(await document.fonts.load(fontSpec())).length)throw new Error('Font unavailable');drawCloth();makeGeometry();ready=true;updateControls();requestRender();$('loading').classList.add('done');}
       catch(error){$('loading').textContent='The lettering could not load. Refresh to try again.';console.error(error);}
     }
     init();
