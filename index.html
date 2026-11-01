@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Threadwork embed</title>
+<style>body{margin:0;background:#f5f3ed}</style>
+</head>
+<body>
+<!-- Same two lines the Shopify theme carries. ?mode=product&product=<handle> on this page sets the flags for testing. -->
+<div id="threadwork" data-mode="lab" data-product=""></div>
+<script>(q=>{const m=document.getElementById('threadwork');if(q.get('mode'))m.dataset.mode=q.get('mode');if(q.get('product'))m.dataset.product=q.get('product');})(new URLSearchParams(location.search));</script>
+<script src="./threadwork.js" defer></script>
+</body>
+</html>
