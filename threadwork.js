@@ -926,7 +926,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         // The blanket: flags from Liquid first, the product JSON as a fallback.
         let variantId=embed.variant,title=embed.title,link=embed.url;
         if(!variantId||!title){const prod=await fetchProduct(embed.product);if(!prod)throw new Error('Product not found');const want=new URLSearchParams(location.search).get('variant');const v=prod.variants.find(x=>String(x.id)===want)||prod.variants.find(x=>x.available)||prod.variants[0];variantId=variantId||String(v.id);title=title||prod.title;}
-        if(!link)link=location.origin+'/products/'+embed.product;
+        if(!link)link=location.origin+'/products/'+embed.product;else if(link.startsWith('/'))link=location.origin+link;
         const qty=parseInt(document.querySelector('.product-page--block .quantity-selector--input')?.value)||1;
         // Snapshot first, so the cart drawer finds the image quickly; not awaited, exactly like the original.
         const id=generateId(),image=IMAGE_BASE+id+'.jpg';
