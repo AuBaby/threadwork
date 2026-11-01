@@ -27,7 +27,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Standalone it is studio, overridable with ?mode=&product= for testing; the embed build replaces
     // these lines with the mount element's data-mode / data-product and its shadow root (default lab).
     const MODES=['studio','lab','product'];
-    const embed={mode:MODES.includes(MOUNT.dataset.mode)?MOUNT.dataset.mode:'lab',product:MOUNT.dataset.product||'',blanket:MOUNT.dataset.blanket||'',line:MOUNT.dataset.line||'',variant:MOUNT.dataset.variant||'',title:MOUNT.dataset.title||'',url:MOUNT.dataset.url||'',open:MOUNT.hasAttribute('data-open')};
+    const embed={mode:MODES.includes(MOUNT.dataset.mode)?MOUNT.dataset.mode:'lab',product:MOUNT.dataset.product||'',blanket:MOUNT.dataset.blanket||'',line:MOUNT.dataset.line||'',price:MOUNT.dataset.price||'',variant:MOUNT.dataset.variant||'',title:MOUNT.dataset.title||'',url:MOUNT.dataset.url||'',open:MOUNT.hasAttribute('data-open')};
     const root=SHADOW;
     const $ = id => root.getElementById(id);
     root.querySelector('.shell').dataset.mode=embed.mode;
@@ -114,7 +114,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const card=root.querySelector('.card');
     const centerCard=()=>{if(!isModal()||shell.hidden)return;const pad=parseFloat(getComputedStyle(shell).paddingTop);card.style.marginTop=Math.max(0,(shell.clientHeight-2*pad-card.offsetHeight)/2)+'px';};
     const openModal=()=>{if(!isModal())return;const host=root.host;if(host&&host.parentElement===document.body)document.body.append(host);shell.hidden=false;if(shell.showPopover){shell.setAttribute('popover','manual');try{shell.showPopover();}catch(e){}}document.body.style.overflow='hidden';relayout();centerCard();if(innerWidth>=920)setTimeout(()=>$('name').focus({preventScroll:true}),0);};
-    const closeModal=()=>{if(!isModal())return;document.body.style.overflow='';card.style.marginTop='';if(shell.hasAttribute('popover')){try{shell.hidePopover();}catch(e){}shell.removeAttribute('popover');}if(previewing){previewing=false;shell.dataset.mode=embed.mode;relayout();}else shell.hidden=true;};
+    const closeModal=()=>{if(!isModal())return;document.body.style.overflow='';card.style.marginTop='';if(typeof saved!=='undefined'&&saved&&!saving)restoreSaved();if(shell.hasAttribute('popover')){try{shell.hidePopover();}catch(e){}shell.removeAttribute('popover');}if(previewing){previewing=false;shell.dataset.mode=embed.mode;relayout();}else shell.hidden=true;};
     addEventListener('resize',centerCard);document.fonts.ready.then(centerCard);
     if(isModal()){shell.hidden=true;if(embed.open)openModal();}
     $('closeModal').addEventListener('click',closeModal);shell.addEventListener('click',e=>{if(e.target===shell)closeModal();});addEventListener('keydown',e=>{if(e.key==='Escape'&&isModal()&&!shell.hidden)closeModal();});document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-threadwork-open]');if(t){e.preventDefault();openModal();}});
@@ -914,12 +914,12 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Resolves true when the file is up; false on failure or after 8 s, so a slow upload never blocks the sale.
     async function uploadSnapshot(id){const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);try{const r=await fetch(UPLOAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:snapshotJpeg(),fileName:id+'.jpg'}),signal:ctl.signal});if(!r.ok)throw new Error(r.status);return true;}catch(e){console.error('Threadwork: snapshot upload failed',e);return false;}finally{clearTimeout(timer);}}
     const cartButton=$('download');
-    const setBusy=on=>{cartButton.disabled=on;cartButton.setAttribute('aria-busy',String(on));cartButton.textContent=on?'Adding…':'Add to Cart';};
-    async function addToCart(){
+    const setBusy=(on,btn=cartButton)=>{btn.disabled=on;btn.setAttribute('aria-busy',String(on));btn.textContent=on?'Adding…':(btn.dataset.idle||'Add to Cart');};
+    async function addToCart(btn=cartButton){
       if(!ready)return;
       const n=letters(state.text),text=state.text.trim();
       if(!n){toast('Type a name first.');return;}
-      setBusy(true);
+      setBusy(true,btn);
       try{
         // Letter-count line: match the variant titled "N Letter(s)", else the known id.
         const emb=await fetchProduct(EMBROIDERY_HANDLE);
@@ -948,11 +948,43 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         await window.theme.cart.fetchTotals();
         await window.theme.cart.updateAllHtml(true);
         closeModal();
+        saved=null;renderSummary();
         window.theme.drawer.open('right','cart-drawer',document.querySelector('[data-threadwork-open]'));
       }catch(e){console.error('Threadwork: add to cart failed',e);toast('Could not add to cart: '+(e&&e.message||'please try again'));}
-      finally{setBusy(false);}
+      finally{setBusy(false,btn);}
     }
-    cartButton.addEventListener('click',()=>{if(canSell())addToCart();});
+    // ---- Save embroidery → summary card on the product page (Option B) ----
+    const money=n=>'$'+n.toFixed(2);
+    let saved=null,saving=false;
+    const summaryHost=()=>document.getElementById('threadwork-summary');
+    const SUMMARY_CSS='#threadwork-summary:empty{display:none}.tw-card{border:1px solid #dddcd3;border-radius:10px;padding:14px;display:flex;gap:14px;align-items:center;background:#faf9f5;margin-bottom:12px;text-transform:none}.tw-thumb{width:84px;height:62px;border-radius:6px;object-fit:cover;flex-shrink:0;display:block}.tw-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:13px;line-height:1.35;color:#5a6358}.tw-meta b{font-weight:600;color:#293d35;font-size:13px}.tw-meta strong{color:#222}.tw-links{display:flex;flex-direction:column;gap:6px;align-items:flex-end}.tw-links button{background:none;border:0;padding:0;font:inherit;font-size:12px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;color:#293d35;min-height:0;line-height:1.4}.tw-links .tw-remove{color:#8c9386}.tw-add{width:100%;height:62px;border:0;border-radius:5px;background:#aa7a73;color:#fff;font:500 18px "Sofia Pro",Helvetica,Arial,sans-serif;text-transform:uppercase;letter-spacing:1px;cursor:pointer}.tw-add[disabled]{opacity:.7;cursor:default}.tw-hint{margin:6px 0 12px;text-align:center;font-size:11px;color:#8c9386;text-transform:none}';
+    if(embed.mode==='product'){
+      cartButton.textContent='Save embroidery';cartButton.dataset.idle='Save embroidery';
+      root.querySelector('.price-inner').innerHTML='Adds <strong id="price">$0.00</strong> to this blanket. You\'ll add it to your cart next.';
+      if(!document.getElementById('threadwork-summary-css')){const st=document.createElement('style');st.id='threadwork-summary-css';st.textContent=SUMMARY_CSS;document.head.append(st);}
+    }
+    const escapeHtml=t=>t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    function renderSummary(){
+      const host=summaryHost();if(!host)return;
+      const trigger=document.querySelector('[data-threadwork-open]'),themeBtn=document.querySelector('.product-buy-buttons--root');
+      if(!saved){host.innerHTML='';if(trigger)trigger.hidden=false;if(themeBtn)themeBtn.style.display='';return;}
+      const extra=saved.n*PRICE_PER_LETTER,base=parseInt(embed.price||'0',10)/100,total=base+extra;
+      host.innerHTML='<div class="tw-card"><img class="tw-thumb" alt="" src="'+saved.thumb+'"><div class="tw-meta"><b>Hand embroidery</b><span>'+escapeHtml(saved.text)+' · '+escapeHtml(fonts[saved.font].name)+' · '+escapeHtml(threads[saved.thread].name)+' thread</span><span>'+saved.n+(saved.n===1?' letter':' letters')+' · <strong>+'+money(extra)+'</strong></span></div><div class="tw-links"><button type="button" class="tw-modify">Modify</button><button type="button" class="tw-remove">Remove</button></div></div>'+
+        '<button type="button" class="tw-add" data-idle="Add to cart · '+money(total).replace(/\.00$/,'')+'">Add to cart · '+money(total).replace(/\.00$/,'')+'</button><p class="tw-hint">Adds the blanket and its embroidery together</p>';
+      host.querySelector('.tw-modify').addEventListener('click',()=>openModal());
+      host.querySelector('.tw-remove').addEventListener('click',()=>{saved=null;renderSummary();});
+      host.querySelector('.tw-add').addEventListener('click',e=>{if(canSell())addToCart(e.currentTarget);});
+      if(trigger)trigger.hidden=true;if(themeBtn)themeBtn.style.display='none';
+    }
+    function saveEmbroidery(){
+      if(!ready)return;const n=letters(state.text);if(!n){toast('Type a name first.');return;}
+      clearTimeout(debounce);cancelAnimationFrame(raf);makeGeometry();renderArtwork();
+      saved={text:state.text.trim(),font:state.font,thread:state.thread,fabric:state.fabric,n,thumb:snapshotJpeg()};
+      saving=true;closeModal();saving=false;renderSummary();
+    }
+    // Closing without saving puts the modal back to what the card shows.
+    function restoreSaved(){if(!saved)return;state.text=saved.text;$('name').value=saved.text;state.font=saved.font;state.thread=saved.thread;updateControls();makeGeometry();requestRender();}
+    cartButton.addEventListener('click',()=>{if(embed.mode==='product'&&!previewing)saveEmbroidery();else if(canSell())addToCart();});
     addEventListener('theme:cart:updated',()=>setBusy(false));
     // A knit texture is pushed to the blanket's catalogue colour (per-channel gain on its
     // average), then cropped to the size at which its right edge best continues its left edge
