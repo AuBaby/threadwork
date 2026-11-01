@@ -7,7 +7,7 @@ The AU Baby hand-embroidery studio as a drop-in script. Paste this where the stu
 <script src="https://dplusplus1024.github.io/threadwork/threadwork.js" defer></script>
 ```
 
-- `data-mode` is `lab` (the embroidery lab page) or `product` (a product page).
+- `data-mode` says who is looking: `lab` (the embroidery lab page, the default) or `product` (a product page). A third value, `studio`, is the design view with the Advanced switch; the store never uses it.
 - `data-product` is the product handle when `data-mode="product"`, e.g. `data-product="{{ product.handle }}"` in Liquid.
 
 The studio renders inside a shadow root, so the store's CSS and the studio's never touch. `window.Threadwork` exposes `{mode, product, root}`.
