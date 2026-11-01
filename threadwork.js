@@ -113,7 +113,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const shell=root.querySelector('.shell'),isModal=()=>shell.dataset.mode==='product';let previewing=false;
     const card=root.querySelector('.card');
     const centerCard=()=>{if(!isModal()||shell.hidden)return;const pad=parseFloat(getComputedStyle(shell).paddingTop);card.style.marginTop=Math.max(0,(shell.clientHeight-2*pad-card.offsetHeight)/2)+'px';};
-    const openModal=()=>{if(!isModal())return;if(typeof announce==='function')announce('open');const host=root.host;if(host&&host.parentElement===document.body)document.body.append(host);shell.hidden=false;if(shell.showPopover){shell.setAttribute('popover','manual');try{shell.showPopover();}catch(e){}}document.body.style.overflow='hidden';relayout();centerCard();requestRender();if(innerWidth>=920)setTimeout(()=>$('name').focus({preventScroll:true}),0);};
+    const openModal=()=>{if(!isModal())return;if(typeof announce==='function')announce('open');const host=root.host;if(host&&host.parentElement===document.body)document.body.append(host);shell.hidden=false;if(shell.showPopover){shell.setAttribute('popover','manual');try{shell.showPopover();}catch(e){}}document.body.style.overflow='hidden';relayout();centerCard();if(ready)renderArtwork();if(innerWidth>=920)setTimeout(()=>$('name').focus({preventScroll:true}),0);};
     const closeModal=()=>{if(!isModal())return;document.body.style.overflow='';card.style.marginTop='';if(typeof saved!=='undefined'&&saved&&!saving)restoreSaved();if(shell.hasAttribute('popover')){try{shell.hidePopover();}catch(e){}shell.removeAttribute('popover');}if(previewing){previewing=false;shell.dataset.mode=embed.mode;relayout();}else shell.hidden=true;};
     addEventListener('resize',centerCard);document.fonts.ready.then(centerCard);
     if(isModal()){shell.hidden=true;if(embed.open)openModal();}
@@ -989,7 +989,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       saving=true;closeModal();saving=false;renderSummary();announce('saved',{letters:n});
     }
     // Closing without saving puts the modal back to what the card shows.
-    function restoreSaved(){if(!saved)return;state.text=saved.text;$('name').value=saved.text;state.font=saved.font;state.thread=saved.thread;updateControls();makeGeometry();requestRender();}
+    function restoreSaved(){if(!saved)return;state.text=saved.text;$('name').value=saved.text;state.font=saved.font;state.thread=saved.thread;updateControls();makeGeometry();}
     cartButton.addEventListener('click',()=>{if(embed.mode==='product'&&!previewing&&FLOW==='save')saveEmbroidery();else if(canSell())addToCart();});
     addEventListener('theme:cart:updated',()=>setBusy(false));
     // A knit texture is pushed to the blanket's catalogue colour (per-channel gain on its
