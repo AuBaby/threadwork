@@ -910,10 +910,13 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const generateId=()=>Date.now().toString(36)+'-'+Math.random().toString(36).substring(2,6);
     // The unzoomed render, scaled down; zoom and pan only ever touch the on-screen copy.
     // Full width, cropped to a band centred on the lettering (720 of the 1150 canvas rows), scaled to 800×360.
-    function snapshotJpeg(){const band=720,top=Math.max(0,Math.min(H-band,Math.round(letterY()-band/2)));const c=document.createElement('canvas');c.width=800;c.height=360;c.getContext('2d').drawImage(artwork,0,top,W,band,0,0,800,360);return c.toDataURL('image/jpeg',.88);}
+    // A 2.2:1 window around the lettering: a little wider than the name, so long names fill it and short names aren't lost in knit.
+    function cropRect(){if(!geometry){const ch=720;return{x:0,y:Math.max(0,Math.min(H-ch,Math.round(letterY()-ch/2))),cw:W,ch};}const sc=Math.min(980/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);const lw=geometry.width*sc,lh=geometry.height*sc;let cw=Math.max(lw*1.22,lh*1.5*2.2,380);cw=Math.min(cw,W);let ch=cw/2.2;if(ch>H){ch=H;cw=ch*2.2;}const cx=W/2,cy=letterY();return{x:Math.max(0,Math.min(W-cw,cx-cw/2)),y:Math.max(0,Math.min(H-ch,cy-ch/2)),cw,ch};}
+    function cropJpeg(w,h,q){const r=cropRect(),c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(artwork,r.x,r.y,r.cw,r.ch,0,0,w,h);return c.toDataURL('image/jpeg',q);}
+    function snapshotJpeg(){return cropJpeg(1000,455,.88);}
     // Resolves true when the file is up; false on failure or after 8 s, so a slow upload never blocks the sale.
     // Card thumbnail: a tight crop around the lettering (2.2:1, same as the card's image box), so the name reads at a glance.
-    function thumbJpeg(){if(!geometry)return snapshotJpeg();const sc=Math.min(980/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);const lw=geometry.width*sc,lh=geometry.height*sc;let cw=Math.max(lw*1.3,lh*1.4*2.2,420);cw=Math.min(cw,W);let ch=cw/2.2;if(ch>H){ch=H;cw=ch*2.2;}const cx=W/2,cy=letterY();const x=Math.max(0,Math.min(W-cw,cx-cw/2)),y=Math.max(0,Math.min(H-ch,cy-ch/2));const c=document.createElement('canvas');c.width=600;c.height=273;c.getContext('2d').drawImage(artwork,x,y,cw,ch,0,0,600,273);return c.toDataURL('image/jpeg',.86);}
+    function thumbJpeg(){return cropJpeg(600,273,.86);}
     async function uploadSnapshot(id){const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);try{const r=await fetch(UPLOAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:snapshotJpeg(),fileName:id+'.jpg'}),signal:ctl.signal});if(!r.ok)throw new Error(r.status);return true;}catch(e){console.error('Threadwork: snapshot upload failed',e);return false;}finally{clearTimeout(timer);}}
     const cartButton=$('download');
     const setBusy=(on,btn=cartButton)=>{btn.disabled=on;btn.setAttribute('aria-busy',String(on));btn.innerHTML=on?'Adding…':(btn.dataset.idle||'Add to Cart');};
