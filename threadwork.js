@@ -908,7 +908,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const productJson={};const fetchProduct=h=>productJson[h]||(productJson[h]=fetch('/products/'+h+'.js',{credentials:'same-origin'}).then(r=>r.ok?r.json():null).catch(()=>null));
     const generateId=()=>Date.now().toString(36)+'-'+Math.random().toString(36).substring(2,6);
     // The unzoomed render, scaled down; zoom and pan only ever touch the on-screen copy.
-    function snapshotJpeg(){const c=document.createElement('canvas');c.width=800;c.height=575;c.getContext('2d').drawImage(artwork,0,0,800,575);return c.toDataURL('image/jpeg',.88);}
+    // Full width, cropped to a band centred on the lettering (720 of the 1150 canvas rows), scaled to 800×360.
+    function snapshotJpeg(){const band=720,top=Math.max(0,Math.min(H-band,Math.round(letterY()-band/2)));const c=document.createElement('canvas');c.width=800;c.height=360;c.getContext('2d').drawImage(artwork,0,top,W,band,0,0,800,360);return c.toDataURL('image/jpeg',.88);}
     // Resolves true when the file is up; false on failure or after 8 s, so a slow upload never blocks the sale.
     async function uploadSnapshot(id){const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);try{const r=await fetch(UPLOAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:snapshotJpeg(),fileName:id+'.jpg'}),signal:ctl.signal});if(!r.ok)throw new Error(r.status);return true;}catch(e){console.error('Threadwork: snapshot upload failed',e);return false;}finally{clearTimeout(timer);}}
     const cartButton=$('download');
