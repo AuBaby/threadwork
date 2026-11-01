@@ -909,7 +909,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const generateId=()=>Date.now().toString(36)+'-'+Math.random().toString(36).substring(2,6);
     // The unzoomed render, scaled down; zoom and pan only ever touch the on-screen copy.
     function snapshotJpeg(){const c=document.createElement('canvas');c.width=800;c.height=575;c.getContext('2d').drawImage(artwork,0,0,800,575);return c.toDataURL('image/jpeg',.88);}
-    async function uploadSnapshot(id){try{const r=await fetch(UPLOAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:snapshotJpeg(),fileName:id+'.jpg'})});if(!r.ok)throw new Error(r.status);}catch(e){console.error('Threadwork: snapshot upload failed',e);}}
+    // Resolves true when the file is up; false on failure or after 8 s, so a slow upload never blocks the sale.
+    async function uploadSnapshot(id){const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);try{const r=await fetch(UPLOAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:snapshotJpeg(),fileName:id+'.jpg'}),signal:ctl.signal});if(!r.ok)throw new Error(r.status);return true;}catch(e){console.error('Threadwork: snapshot upload failed',e);return false;}finally{clearTimeout(timer);}}
     const cartButton=$('download');
     const setBusy=on=>{cartButton.disabled=on;cartButton.setAttribute('aria-busy',String(on));cartButton.textContent=on?'Adding…':'Add to Cart';};
     async function addToCart(){
@@ -928,10 +929,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         if(!variantId||!title){const prod=await fetchProduct(embed.product);if(!prod)throw new Error('Product not found');const want=new URLSearchParams(location.search).get('variant');const v=prod.variants.find(x=>String(x.id)===want)||prod.variants.find(x=>x.available)||prod.variants[0];variantId=variantId||String(v.id);title=title||prod.title;}
         if(!link)link=location.origin+'/products/'+embed.product;else if(link.startsWith('/'))link=location.origin+link;
         const qty=parseInt(document.querySelector('.product-page--block .quantity-selector--input')?.value)||1;
-        // Snapshot first, so the cart drawer finds the image quickly; not awaited, exactly like the original.
+        // Snapshot upload and cart add run side by side; the drawer opens once both are done, so the preview is in place.
         const id=generateId(),image=IMAGE_BASE+id+'.jpg';
         clearTimeout(debounce);cancelAnimationFrame(raf);makeGeometry();renderArtwork();
-        uploadSnapshot(id);
+        const uploaded=uploadSnapshot(id);
         const body=new URLSearchParams();
         body.append('items[0][id]',variantId);body.append('items[0][quantity]',qty);body.append('items[0][properties][_image]',image);
         body.append('items[1][id]',embroideryId);body.append('items[1][quantity]',qty);
@@ -941,6 +942,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         const addUrl=(window.theme.urls&&window.theme.urls.cart_add?window.theme.urls.cart_add:'/cart/add')+'.js';
         const res=await fetch(addUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()});
         if(!res.ok){let msg=res.statusText;try{const j=await res.json();msg=j.description||j.message||msg;}catch(e){}throw new Error(msg);}
+        await uploaded;
         await window.theme.cart.fetchTotals();
         await window.theme.cart.updateAllHtml(true);
         closeModal();
