@@ -15,7 +15,7 @@ Only Sawa blankets have knits in the studio so far, so the block is wrapped in a
 
 ```html
 {% if product.title contains 'The Sawa Blanket' %}
-<button data-threadwork-open hidden>Personalize with hand embroidery</button>
+<button data-threadwork-open hidden>🧵 Add Hand Embroidery</button>
 <div id="threadwork" data-mode="product" data-line="sawa" data-product="{{ product.handle }}" data-blanket="{{ product.title | split: ' - ' | last }}" data-variant="{{ product.selected_or_first_available_variant.id }}" data-title="{{ product.title | escape }}" data-url="{{ product.url | absolute_url }}"></div>
 <script src="https://aubaby.github.io/threadwork/threadwork.js" defer></script>
 {% endif %}
