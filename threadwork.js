@@ -990,6 +990,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     }
     // Closing without saving puts the modal back to what the card shows.
     function restoreSaved(){if(!saved)return;state.text=saved.text;$('name').value=saved.text;state.font=saved.font;state.thread=saved.thread;updateControls();makeGeometry();}
+    // A cart thumbnail links back here with ?tw_text=&tw_font=&tw_thread=: rebuild the saved embroidery and show its card.
+    function restoreFromUrl(){if(embed.mode!=='product')return;const q=new URLSearchParams(location.search);const text=(q.get('tw_text')||'').trim();if(!text||letters(text)>20)return;const norm=t=>String(t).toLowerCase().replace(/[^a-z]/g,'');const fi=fonts.findIndex(f=>norm(f.name)===norm(q.get('tw_font')||'')),ti=threads.findIndex(t=>norm(t.name)===norm(q.get('tw_thread')||''));state.text=text;$('name').value=text;if(fi>=0)state.font=fi;if(ti>=0)state.thread=ti;updateControls();makeGeometry();renderArtwork();saved={text,font:state.font,thread:state.thread,fabric:state.fabric,n:letters(text),thumb:thumbJpeg()};renderSummary();}
     cartButton.addEventListener('click',()=>{if(embed.mode==='product'&&!previewing&&FLOW==='save')saveEmbroidery();else if(canSell())addToCart();});
     addEventListener('theme:cart:updated',()=>setBusy(false));
     // A knit texture is pushed to the blanket's catalogue colour (per-channel gain on its
@@ -1030,7 +1032,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       f.pattern=clothCtx.createPattern(m,'repeat');ok();};img.onerror=fail;img.src=f.texture;});
     async function init(){
       for(const f of fonts)if(f.kit&&!f.pending){const l=document.createElement('link');l.rel='stylesheet';l.href=f.kit;document.head.append(l);}
-      try{await Promise.all([...fonts.filter(f=>!f.pending).map(f=>document.fonts.load(`180px "${f.family}"`)),...fabrics.filter(f=>f.texture).map(loadTexture)]);if(!(await document.fonts.load(fontSpec())).length)throw new Error('Font unavailable');drawCloth();makeGeometry();ready=true;updateControls();requestRender();$('loading').classList.add('done');centerCard();}
+      try{await Promise.all([...fonts.filter(f=>!f.pending).map(f=>document.fonts.load(`180px "${f.family}"`)),...fabrics.filter(f=>f.texture).map(loadTexture)]);if(!(await document.fonts.load(fontSpec())).length)throw new Error('Font unavailable');drawCloth();makeGeometry();ready=true;updateControls();requestRender();$('loading').classList.add('done');centerCard();restoreFromUrl();}
       catch(error){$('loading').textContent='The lettering could not load. Refresh to try again.';console.error(error);}
     }
     init();
