@@ -819,7 +819,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       stroke(-width*.17,-width*.2,width*.125,color(hex,76,.55));
     }
     // Canvas y of the lettering's optical centre: 46% of the visible height, measured when the crop is pinned top.
-    function letterY(){const pinned=getComputedStyle($('scene')).objectPosition.endsWith(' 0px');if(!pinned)return H*.46;const r=$('canvaswrap').getBoundingClientRect();if(!r.width)return H*.46;const shownH=r.width*H/W;return (shownH>r.height?r.height*W/r.width:H)*.46;}
+    function letterY(){const pinned=getComputedStyle($('scene')).objectPosition.endsWith(' 0px');if(!pinned)return H*.46;const r=$('canvaswrap').getBoundingClientRect();if(!r.width)return H*.46;
+      // Aim at the card's FINAL height: while the price line is still sliding open, add what it has yet to grow, so the word lands where it will stay.
+      const note=root.querySelector('.price-note');let pending=0;if(note.classList.contains('show')){const finalH=note.querySelector('.price-inner').scrollHeight+14;const curH=note.getBoundingClientRect().height+parseFloat(getComputedStyle(note).marginTop);pending=Math.max(0,finalH-curH);}const h=r.height+pending;const shownH=r.width*H/W;return (shownH>h?h*W/r.width:H)*.46;}
     function drawEmbroidery(){
       stitches=0;if(!geometry)return;
       // A thread may carry its own hand-picked yarn colour.
