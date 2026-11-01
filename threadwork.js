@@ -929,39 +929,41 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     async function uploadSnapshot(id){const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);try{const r=await fetch(UPLOAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:snapshotJpeg(),fileName:id+'.jpg'}),signal:ctl.signal});if(!r.ok)throw new Error(r.status);return true;}catch(e){console.error('Threadwork: snapshot upload failed',e);return false;}finally{clearTimeout(timer);}}
     const cartButton=$('download');
     const setBusy=(on,btn=cartButton)=>{btn.disabled=on;btn.setAttribute('aria-busy',String(on));btn.innerHTML=on?'Adding…':(btn.dataset.idle||'Add to Cart');};
-    async function addToCart(btn=cartButton){
+    async function addToCart(btn=cartButton,withEmbroidery=true){
       if(!ready)return;
-      const n=letters(state.text),text=state.text.trim();
-      if(!n){toast('Type a name first.');return;}
+      const n=withEmbroidery?letters(state.text):0,text=state.text.trim();
+      if(withEmbroidery&&!n){toast('Type a name first.');return;}
       setBusy(true,btn);
       try{
         // Letter-count line: match the variant titled "N Letter(s)", else the known id.
-        const emb=await fetchProduct(EMBROIDERY_HANDLE);
-        const match=emb&&emb.variants.find(v=>v.title.startsWith(n+' Letter'));
-        const embroideryId=match?String(match.id):EMBROIDERY_VARIANTS[n-1];
-        if(!embroideryId)throw new Error('No embroidery option for '+n+' letters');
+        let embroideryId=null;
+        if(withEmbroidery){const emb=await fetchProduct(EMBROIDERY_HANDLE);const match=emb&&emb.variants.find(v=>v.title.startsWith(n+' Letter'));embroideryId=match?String(match.id):EMBROIDERY_VARIANTS[n-1];if(!embroideryId)throw new Error('No embroidery option for '+n+' letters');}
         // The blanket: flags from Liquid first, the product JSON as a fallback.
         const urlVariant=new URLSearchParams(location.search).get('variant');let variantId=urlVariant||embed.variant,title=embed.title,link=embed.url;
         if(!variantId||!title){const prod=await fetchProduct(embed.product);if(!prod)throw new Error('Product not found');const want=new URLSearchParams(location.search).get('variant');const v=prod.variants.find(x=>String(x.id)===want)||prod.variants.find(x=>x.available)||prod.variants[0];variantId=variantId||String(v.id);title=title||prod.title;}
         if(!link)link=location.origin+'/products/'+embed.product;else if(link.startsWith('/'))link=location.origin+link;
         const qty=parseInt(document.querySelector('.product-page--block .quantity-selector--input')?.value)||1;
         // Snapshot upload and cart add run side by side; the drawer opens once both are done, so the preview is in place.
-        const id=generateId(),image=IMAGE_BASE+id+'.jpg';
-        clearTimeout(debounce);cancelAnimationFrame(raf);makeGeometry();renderArtwork();
-        const uploaded=uploadSnapshot(id);
         const body=new URLSearchParams();
-        body.append('items[0][id]',variantId);body.append('items[0][quantity]',qty);body.append('items[0][properties][_image]',image);
-        body.append('items[1][id]',embroideryId);body.append('items[1][quantity]',qty);
-        body.append('items[1][properties][_for]',title);body.append('items[1][properties][_link]',link);
-        body.append('items[1][properties][Embroidery Text]',text);body.append('items[1][properties][Thread Color]',threads[state.thread].name);body.append('items[1][properties][Font]',fonts[state.font].name);
-        body.append('items[1][properties][_image]',image);body.append('items[1][properties][_flow]',FLOW);
+        body.append('items[0][id]',variantId);body.append('items[0][quantity]',qty);
+        let uploaded=Promise.resolve(true);
+        if(withEmbroidery){
+          const id=generateId(),image=IMAGE_BASE+id+'.jpg';
+          clearTimeout(debounce);cancelAnimationFrame(raf);makeGeometry();renderArtwork();
+          uploaded=uploadSnapshot(id);
+          body.append('items[0][properties][_image]',image);
+          body.append('items[1][id]',embroideryId);body.append('items[1][quantity]',qty);
+          body.append('items[1][properties][_for]',title);body.append('items[1][properties][_link]',link);
+          body.append('items[1][properties][Embroidery Text]',text);body.append('items[1][properties][Thread Color]',threads[state.thread].name);body.append('items[1][properties][Font]',fonts[state.font].name);
+          body.append('items[1][properties][_image]',image);body.append('items[1][properties][_flow]',FLOW);
+        }
         const addUrl=(window.theme.urls&&window.theme.urls.cart_add?window.theme.urls.cart_add:'/cart/add')+'.js';
         const res=await fetch(addUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body.toString()});
         if(!res.ok){let msg=res.statusText;try{const j=await res.json();msg=j.description||j.message||msg;}catch(e){}throw new Error(msg);}
         // Sold. Whatever happens below, the lines are in the cart.
         try{await uploaded;await window.theme.cart.fetchTotals();await window.theme.cart.updateAllHtml(true);}catch(e){console.error('Threadwork: cart refresh after add failed',e);}
         closeModal();
-        saved=null;renderSummary();announce('added',{letters:n,font:fonts[state.font].name,thread:threads[state.thread].name});
+        saved=null;renderSummary();announce('added',withEmbroidery?{letters:n,font:fonts[state.font].name,thread:threads[state.thread].name}:{letters:0});
         try{window.theme.drawer.open('right','cart-drawer',document.querySelector('[data-threadwork-open]'));}catch(e){location.href='/cart';}
       }catch(e){console.error('Threadwork: add to cart failed',e);notify('Could not add to cart: '+(e&&e.message||'please try again'));}
       finally{setBusy(false,btn);}
@@ -972,6 +974,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     if(embed.mode==='product'){
       cartButton.textContent=FLOW==='direct'?'Add to Cart':'Save embroidery';cartButton.dataset.idle=cartButton.textContent;
       {const t=document.querySelector('[data-threadwork-open]');if(t)t.hidden=false;}
+      renderSummary();
       if(!document.getElementById('threadwork-summary-css')){const st=document.createElement('style');st.id='threadwork-summary-css';st.textContent=SUMMARY_CSS;document.head.append(st);}
     }
     function notify(msg){const host=summaryHost();if(!shell.hidden||!host){toast(msg);return;}let n=host.querySelector('.tw-error');if(!n){n=document.createElement('p');n.className='tw-error';host.append(n);}n.textContent=msg;}
@@ -979,14 +982,15 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     function renderSummary(){
       const host=summaryHost();if(!host)return;
       const trigger=document.querySelector('[data-threadwork-open]'),themeBtn=document.querySelector('.product-buy-buttons--root');
-      if(!saved){host.innerHTML='';if(trigger)trigger.hidden=false;if(themeBtn)themeBtn.style.display='';return;}
+      if(themeBtn)themeBtn.style.display='none';
+      if(!saved){host.innerHTML='<button type="button" class="tw-add" data-idle="Add to Cart">Add to Cart</button>';host.querySelector('.tw-add').addEventListener('click',e=>{if(canSell())addToCart(e.currentTarget,false);});if(trigger)trigger.hidden=false;return;}
       const extra=saved.n*PRICE_PER_LETTER,base=parseInt(embed.price,10),total=isNaN(base)?null:base/100+extra;const totalLabel=total==null?'Add to cart with embroidery':'Add to cart · '+money(total).replace(/\.00$/,'');
       host.innerHTML='<div class="tw-card"><img class="tw-thumb" alt="" src="'+saved.thumb+'"><div class="tw-meta"><b>Hand Embroidery</b><span>'+escapeHtml(saved.text)+' · '+escapeHtml(fonts[saved.font].name)+' · '+escapeHtml(threads[saved.thread].name)+'</span><span>'+saved.n+(saved.n===1?' letter':' letters')+' · <strong>+'+money(extra)+'</strong></span></div><div class="tw-links"><button type="button" class="tw-modify">Modify</button><button type="button" class="tw-remove">Remove</button></div></div>'+
         '<button type="button" class="tw-add" data-idle="'+(total==null?totalLabel:'Add to cart · <span class=&quot;tw-price&quot;>'+money(total).replace(/\.00$/,'')+'</span>')+'">'+(total==null?totalLabel:'Add to cart · <span class="tw-price">'+money(total).replace(/\.00$/,'')+'</span>')+'</button>';
       host.querySelector('.tw-modify').addEventListener('click',()=>openModal());
       host.querySelector('.tw-remove').addEventListener('click',()=>{saved=null;renderSummary();});
-      host.querySelector('.tw-add').addEventListener('click',e=>{if(canSell())addToCart(e.currentTarget);});
-      if(trigger)trigger.hidden=true;if(themeBtn)themeBtn.style.display='none';
+      host.querySelector('.tw-add').addEventListener('click',e=>{if(canSell())addToCart(e.currentTarget,true);});
+      if(trigger)trigger.hidden=true;
     }
     function saveEmbroidery(){
       if(!ready)return;const n=letters(state.text);if(!n){toast('Type a name first.');return;}
