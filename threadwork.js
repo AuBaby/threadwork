@@ -569,7 +569,16 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         entry=closestStrokePoint(entry,glyphPaths).point;exit=closestStrokePoint(exit,glyphPaths).point;
         if(previous&&entry&&connected()){
           const points=previous.paths.concat(glyphPaths).flat(),bounds={x0:Math.min(...points.map(p=>p.x)),x1:Math.max(...points.map(p=>p.x)),y0:Math.min(...points.map(p=>p.y)),y1:Math.max(...points.map(p=>p.y))};
-          let connector=connectStrokes(previous.exit,entry,field,bounds);
+          // The entry is wherever the word's own ink leads from the previous exit: every end of this
+          // letter's strokes is tried, and the route that covers the most ink nothing else stitches wins
+          // (shortest on a tie). Espiritu's s after a capital enters at the top of its body through a
+          // long hairline, not at the bottom curl the position heuristic picks.
+          const unstitched=route=>route.filter(p=>closestStrokePoint(p,glyphPaths).distance>5.5&&closestStrokePoint(p,previous.paths).distance>2.5).length;
+          const candidates=[entry];for(const line of glyphPaths)for(const p of [line[0],line[line.length-1]])if(!candidates.some(c=>Math.hypot(c.x-p.x,c.y-p.y)<3))candidates.push(p);
+          let best=null;
+          for(const c of candidates){const route=connectStrokes(previous.exit,c,field,bounds);if(!route.length)continue;const score=unstitched(route);if(!best||score>best.score+2||(Math.abs(score-best.score)<=2&&route.length<best.route.length))best={c,route,score};}
+          if(best)entry=best.c;
+          let connector=best?best.route:connectStrokes(previous.exit,entry,field,bounds);
           // Stop as soon as the connector meets the next pen stroke. Drawing
           // the rest of a brush-font join would duplicate its downstroke.
           for(let k=1;k<connector.length;k++){
