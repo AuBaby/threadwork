@@ -94,6 +94,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Centreline to centreline, since the chain has its own width (d, 2026-11-01: ink-to-ink left Pacifico
     // a little far apart and Petit's T and P touching).
     const INITIALS_GAP = 32;
+    // The chain's own width in font units (measured on the canvas at the default weight) and the gap the
+    // stitched strokes should keep in two dimensions: a hairline face needs more ink clearance than a fat one.
+    const CHAIN_WIDTH = 8, STITCH_GAP = 22;
     const initials = () => { const t = state.text.replace(/[^A-Za-z]/g, ''); return t.length >= 2 && t.length <= 5 && /^[A-Z]+$/.test(t); };
     const connected = () => fonts[state.font].connected !== false && !initials();
     const applyFont = ctx => { ctx.font = fontSpec(); ctx.letterSpacing = (fonts[state.font].tracking || 0) + 'px'; return ctx; };
@@ -508,7 +511,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // closest its ink comes to the previous letter's ink, on any row, is INITIALS_GAP. That reads
     // as the same spacing in every face, whatever its side bearings or swashes.
     function monogramLayout(measure){
-      const chars=[...state.text].filter(ch=>ch.trim()),layout=[],right=new Map();let bbox=null;
+      const chars=[...state.text].filter(ch=>ch.trim()),layout=[],right=new Map(),prevInk=[];let bbox=null,prevStroke=0;
       for(const ch of chars){
         const m=measure.measureText(ch),f=makeFontField(ch,m),rows=new Map();
         // Each row's ink runs; the outer edges are pulled in to the middle of their stroke (capped at the
@@ -518,7 +521,19 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         widths.sort((a,b)=>a-b);const stroke=widths[widths.length>>1]||1;
         for(const [y,runs] of rowRuns){const [a0,b0]=runs[0],[a1,b1]=runs[runs.length-1];rows.set(y-f.oy,[a0+Math.min(b0-a0+1,stroke)/2-f.ox,b1-Math.min(b1-a1+1,stroke)/2-f.ox]);}
         let x=0;if(layout.length){x=-Infinity;for(const [y,[lo]] of rows){const r=right.get(y);if(r!==undefined)x=Math.max(x,r+INITIALS_GAP-lo);}if(!isFinite(x)){const b=bbox;x=b.right+INITIALS_GAP-Math.min(...[...rows.values()].map(v=>v[0]));}}
+        // Then in two dimensions: a crossbar sweeping over the next letter's swash is as close as a stem
+        // beside it. The letter slides on until no stitch of it comes within `need` of the earlier ink.
+        const pts=[];for(const [y,runs] of rowRuns){if(y%2)continue;for(const [a,b] of runs)for(let px=a;px<=b;px+=2)pts.push([px-f.ox,y-f.oy]);}
+        if(layout.length&&prevInk.length){
+          const need=Math.max(2,STITCH_GAP+CHAIN_WIDTH-(stroke+prevStroke)/2),G=2000,GH=600,OX=400,OY=350,dt=new Float32Array(G*GH).fill(1e9);
+          for(const [px,py] of prevInk){const gx=px+OX,gy=py+OY;if(gx>=0&&gx<G&&gy>=0&&gy<GH)dt[gy*G+gx]=0;}
+          for(let y=0;y<GH;y++)for(let gx=0;gx<G;gx++){const i=y*G+gx;let v=dt[i];if(gx)v=Math.min(v,dt[i-1]+1);if(y){v=Math.min(v,dt[i-G]+1);if(gx)v=Math.min(v,dt[i-G-1]+1.414);if(gx<G-1)v=Math.min(v,dt[i-G+1]+1.414);}dt[i]=v;}
+          for(let y=GH-1;y>=0;y--)for(let gx=G-1;gx>=0;gx--){const i=y*G+gx;let v=dt[i];if(gx<G-1)v=Math.min(v,dt[i+1]+1);if(y<GH-1){v=Math.min(v,dt[i+G]+1);if(gx<G-1)v=Math.min(v,dt[i+G+1]+1.414);if(gx)v=Math.min(v,dt[i+G-1]+1.414);}dt[i]=v;}
+          const minAt=xx=>{let m=1e9;for(const [px,py] of pts){const gx=Math.round(px+xx)+OX,gy=py+OY;if(gx<0||gx>=G||gy<0||gy>=GH)continue;const v=dt[gy*G+gx];if(v<m)m=v;}return m;};
+          let guard=0;while(minAt(x)<need&&guard++<240)x+=1;
+        }
         layout.push([ch,x]);for(const [y,[,hi]] of rows)right.set(y,Math.max(right.get(y)??-Infinity,x+hi));
+        for(const [px,py] of pts)prevInk.push([Math.round(px+x),py]);prevStroke=stroke;
         const l=x-m.actualBoundingBoxLeft,r=x+m.actualBoundingBoxRight;bbox=bbox?{left:Math.min(bbox.left,l),right:Math.max(bbox.right,r),ascent:Math.max(bbox.ascent,m.actualBoundingBoxAscent),descent:Math.max(bbox.descent,m.actualBoundingBoxDescent)}:{left:l,right:r,ascent:m.actualBoundingBoxAscent,descent:m.actualBoundingBoxDescent};
       }
       return{layout,metrics:{width:bbox.right,actualBoundingBoxLeft:-bbox.left,actualBoundingBoxRight:bbox.right,actualBoundingBoxAscent:bbox.ascent,actualBoundingBoxDescent:bbox.descent}};
@@ -1075,7 +1090,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       catch(error){$('loading').textContent='The lettering could not load. Refresh to try again.';console.error(error);if(embed.mode==='product'&&summaryHost()&&summaryHost().querySelector('.tw-card--loading'))renderSummary();}
     }
     init();
-window.Threadwork={mode:embed.mode,product:embed.product,flow:typeof FLOW==='undefined'?'':FLOW,root:SHADOW,open:openModal,close:closeModal};
+window.Threadwork={mode:embed.mode,product:embed.product,flow:typeof FLOW==='undefined'?'':FLOW,root:SHADOW,open:openModal,close:closeModal,debug:()=>({monogram,paths,strokeWidth})};
 };
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
