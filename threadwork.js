@@ -321,6 +321,31 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       for(let pass=0;pass<8;pass++){const old=route.map(p=>({...p}));for(let i=1;i<route.length-1;i++)route[i]={x:(old[i-1].x+old[i].x*2+old[i+1].x)/4,y:(old[i-1].y+old[i].y*2+old[i+1].y)/4};}
       return route;
     }
+    // Ink the word has that no stitch covers: a contextual alternate's own stroke (Espiritu's s after a
+    // capital enters through a long hairline the isolated glyph lacks, and the E never touches it, so no
+    // join can reach it). The word's skeleton is compared with the pen paths, and any skeleton run
+    // farther from every path than the stroke's half-width is stitched on its own. A cheap pre-check on
+    // the raw ink gates the thinning, so ordinary words only pay for one distance grid.
+    function bareInkPaths(lines,field){
+      const {w,h,ink,ox,oy}=field,G=w*h,half=Math.max(2.5,strokeWidth/2),tol=half+2;
+      const dt=new Float32Array(G).fill(1e9);
+      for(const line of lines)for(const p of line){const x=Math.round(p.x+ox),y=Math.round(p.y+oy);if(x>=0&&x<w&&y>=0&&y<h)dt[y*w+x]=0;}
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;let v=dt[i];if(x)v=Math.min(v,dt[i-1]+1);if(y){v=Math.min(v,dt[i-w]+1);if(x)v=Math.min(v,dt[i-w-1]+1.414);if(x<w-1)v=Math.min(v,dt[i-w+1]+1.414);}dt[i]=v;}
+      for(let y=h-1;y>=0;y--)for(let x=w-1;x>=0;x--){const i=y*w+x;let v=dt[i];if(x<w-1)v=Math.min(v,dt[i+1]+1);if(y<h-1){v=Math.min(v,dt[i+w]+1);if(x<w-1)v=Math.min(v,dt[i+w+1]+1.414);if(x)v=Math.min(v,dt[i+w-1]+1.414);}dt[i]=v;}
+      let far=0;for(let i=0;i<G;i++)if(ink[i]&&dt[i]>2*half+2)far++;
+      if(far<12)return[];
+      const a=Uint8Array.from(ink),offsets=[-w,-w+1,1,w+1,w,w-1,-1,-w-1],pixels=[];for(let p=w+1;p<G-w-1;p++)if(a[p])pixels.push(p);
+      let changed=true;
+      for(let it=0;changed&&it<120;it++){changed=false;for(let pass=0;pass<2;pass++){const del=[];for(const p of pixels){if(!a[p])continue;const b=offsets.map(o=>a[p+o]||0);let count=0,tr=0;for(let k=0;k<8;k++){count+=b[k];if(!b[k]&&b[(k+1)%8])tr++;}if(count<2||count>6||tr!==1)continue;if(pass===0?(b[0]*b[2]*b[4]===0&&b[2]*b[4]*b[6]===0):(b[0]*b[2]*b[6]===0&&b[0]*b[4]*b[6]===0))del.push(p);}if(del.length)changed=true;for(const p of del)a[p]=0;}}
+      const bare=new Uint8Array(G);let count=0;for(const p of pixels)if(a[p]&&dt[p]>tol){bare[p]=1;count++;}
+      if(count<12)return[];
+      const nb=p=>offsets.map(o=>p+o).filter(q=>q>=0&&q<G&&bare[q]),visited=new Uint8Array(G),out=[];
+      const walk=start=>{const line=[];let cur=start;visited[cur]=1;for(;;){line.push({x:cur%w-ox,y:Math.floor(cur/w)-oy});const next=nb(cur).filter(q=>!visited[q]);if(!next.length)break;const straight=q=>Math.abs(q-cur)===1||Math.abs(q-cur)===w?0:1;next.sort((p,q)=>straight(p)-straight(q));cur=next[0];visited[cur]=1;}return line;};
+      const ends=[];for(const p of pixels)if(bare[p]&&nb(p).length===1)ends.push(p);
+      for(const e of ends)if(!visited[e]){const line=walk(e);if(line.length>=12)out.push(line);}
+      for(const p of pixels)if(bare[p]&&!visited[p]){const line=walk(p);if(line.length>=12)out.push(line);}
+      return out;
+    }
     function closestStrokePoint(point,lines){
       let best=Infinity,closest={...point};
       for(const line of lines)for(let j=1;j<line.length;j++){
@@ -601,7 +626,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       }
       // Corner cutting is sampled relative to the stroke, so a tight turn in
       // a fine monoline face is rounded no more than one in a brush face.
-      paths=joinPenPaths(paths);if(fonts[state.font].extendEnds)extendEnds(paths,field);paths=centerPenPaths(paths,field);paths=smoothPenPaths(paths,Math.max(3,Math.min(10,strokeWidth*.42)));
+      paths=joinPenPaths(paths);if(fonts[state.font].extendEnds)extendEnds(paths,field);paths=centerPenPaths(paths,field);paths.push(...bareInkPaths(paths,field));paths=smoothPenPaths(paths,Math.max(3,Math.min(10,strokeWidth*.42)));
       let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;for(const line of paths)for(const p of line){x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y);}
       // Optical centring: a heavy capital at one end and a thin flick at the other make a box-centred
       // word look shifted, so the centre is taken halfway between the box centre and the ink centroid.
