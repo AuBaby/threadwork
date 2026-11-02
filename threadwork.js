@@ -38,7 +38,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const announce=(name,detail)=>{try{window.dispatchEvent(new CustomEvent('threadwork:'+name,{detail:Object.assign({flow:FLOW,product:embed.product},detail||{})}));if(Array.isArray(window.dataLayer))window.dataLayer.push(Object.assign({event:'threadwork_'+name,threadwork_flow:FLOW,threadwork_product:embed.product},detail||{}));}catch(e){}};
     const money=n=>'$'+n.toFixed(2);
     let saved=null,saving=false;const urlRestore={cancelled:false,openWhenReady:false};
-  const syncQuiet=async()=>{const t=document.querySelector('[data-threadwork-open]');if(!t||!canSell())return;try{const c=await (await fetch('/cart.js',{credentials:'same-origin'})).json();const has=(c.items||[]).some(i=>/(Sawa|Popcorn) Blanket|Little Love Blanket|Cashmere Cloud Baby Blanket Gift Set|Kid Beanie|Adult Beanie/i.test(i.product_title||'')||/Custom Hand Embroidery/i.test(i.product_title||''));if(has)t.dataset.quiet='1';else delete t.dataset.quiet;}catch(e){}};
+  const syncQuiet=async()=>{const t=document.querySelector('[data-threadwork-open]');if(!t||!canSell())return;try{const c=await (await fetch('/cart.js',{credentials:'same-origin'})).json();const has=(c.items||[]).some(i=>/(Sawa|Popcorn) Blanket|Little Love Blanket|Cashmere Cloud (Baby Blanket )?Gift Set|Kid Beanie|Adult Beanie/i.test(i.product_title||'')||/Custom Hand Embroidery/i.test(i.product_title||''));if(has)t.dataset.quiet='1';else delete t.dataset.quiet;}catch(e){}};
   document.addEventListener('theme:cart:updated',()=>syncQuiet());
     // The twelve thread colours offered on the store.
     const threads = [
