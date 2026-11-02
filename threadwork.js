@@ -961,7 +961,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const STITCHABLE=/[^\p{L}\p{N} .,'&-]/gu;const clean=text=>text.replace(STITCHABLE,'').replace(/ {2,}/g,' ');const letters=text=>[...clean(text).replace(/\s/g,'')].length;
     const PRICE_PER_LETTER=10;let MAX_LETTERS=parseInt(embed.max,10)||(embed.line==='popcorn'?3:20);
     // The cap shows in the hint, the field label (initials when 3 or fewer) and the counter.
-    const POPCORN_TIP='The Popcorn’s thick knit is best suited for initials. For a full name, we’d recommend The Sawa.';
+    const POPCORN_TIP='The Popcorn’s thick knit is best suited for initials. For a full name, we recommend The Sawa.';
     const setMax=(n,adult=/adult/i.test(embed.title||''))=>{MAX_LETTERS=n;const v=root.querySelector('label[for=name]+.value');if(v)v.textContent='Up to '+n+' characters';const l=root.querySelector('label[for=name]');if(l)l.textContent=n<=3?'Embroidery initials':'Embroidery text';const c=root.querySelector('#charCount');if(c)c.textContent=letters(state.text)+'/'+n;const tip=root.querySelector('#lengthTip');if(tip){if(!tip.dataset.full)tip.dataset.full=tip.innerHTML;if(n<=3&&!adult)tip.textContent=POPCORN_TIP;else tip.innerHTML=tip.dataset.full;}};
     setMax(MAX_LETTERS);
     // Outside a product page the studio offers the store's embroiderable products in a dropdown; picking one
