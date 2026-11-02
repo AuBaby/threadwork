@@ -924,6 +924,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // ---- Shopify cart ----
     // Only on a real product page (the theme's cart and drawer exist and this is not the studio's preview).
     const canSell=()=>embed.mode==='product'&&!previewing&&!!(window.theme&&window.theme.cart&&window.theme.drawer);
+    // A click on the page's Add button never goes quiet: if the theme's cart isn't there, say so.
+    const tryAdd=(btn,withEmbroidery)=>{if(canSell())addToCart(btn,withEmbroidery);else notify('Could not add to cart. Please refresh the page and try again.');};
     // "Custom Hand Embroidery" variants, one per letter count; looked up by title at run time, this list is the fallback.
     const EMBROIDERY_HANDLE='custom-embroidery';
     const EMBROIDERY_VARIANTS=['44110949548211','44110949580979','44110949613747','44110949646515','44110949679283','44110949712051','44110949744819','44110949777587','44110949810355','44110949843123','44110949875891','44110949908659','44110949941427','44110949974195','44110950006963','44110950039731','44110950072499','44110950105267','44110950138035','44110950170803'];
@@ -945,7 +947,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const cartButton=$('download');
     const setBusy=(on,btn=cartButton)=>{btn.disabled=on;btn.setAttribute('aria-busy',String(on));btn.innerHTML=on?'Adding to cart <span class="tw-spin" aria-hidden="true"></span>':(btn.dataset.idle||'Add to Cart');};
     async function addToCart(btn=cartButton,withEmbroidery=true){
-      if(!ready)return;
+      if(withEmbroidery&&!ready)return;
       const n=withEmbroidery?letters(state.text):0,text=state.text.trim();
       if(withEmbroidery&&!n){toast('Type a name first.');return;}
       setBusy(true,btn);
@@ -992,7 +994,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       if(!document.getElementById('threadwork-summary-css')){const st=document.createElement('style');st.id='threadwork-summary-css';st.textContent=SUMMARY_CSS;document.head.append(st);}
       // A cart link (?tw_text=…) restores an embroidery once the fonts and knit are in. Until then the card's place is held by a loading card with the details read straight from the URL, and the trigger stays hidden.
       const pendingUrl=(()=>{const q=new URLSearchParams(location.search);const text=(q.get('tw_text')||'').trim();if(!text||letters(text)>MAX_LETTERS)return null;const norm=t=>String(t).toLowerCase().replace(/[^a-z]/g,'');const f=fonts.find(f=>norm(f.name)===norm(q.get('tw_font')||'')),t=threads.find(t=>norm(t.name)===norm(q.get('tw_thread')||''));return{text,font:f?f.name:(q.get('tw_font')||''),thread:t?t.name:(q.get('tw_thread')||''),n:letters(text)};})();
-      if(pendingUrl&&summaryHost()){{const tb=document.querySelector('.product-buy-buttons--root');if(tb)tb.style.display='none';}const p=pendingUrl,extra=p.n*PRICE_PER_LETTER,base=parseInt(embed.price,10),total=isNaN(base)?null:base/100+extra;const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));summaryHost().innerHTML='<div class="tw-card tw-card--loading" aria-busy="true"><div class="tw-thumb tw-thumb--loading"><span class="tw-spin" aria-hidden="true"></span></div><div class="tw-meta"><b>Hand Embroidery</b><span>'+esc([p.text,p.font,p.thread].filter(Boolean).join(' · '))+'</span><span>'+p.n+(p.n===1?' letter':' letters')+' · <strong>+'+money(extra)+'</strong></span></div><div class="tw-links"><button type="button" class="tw-modify">Modify</button><button type="button" class="tw-remove">Remove</button></div></div><button type="button" class="tw-add" disabled>'+(total==null?'Add to cart with embroidery':'Add to cart · <span class="tw-price">'+money(total).replace(/.00$/,'')+'</span>')+'</button>';summaryHost().querySelector('.tw-remove').addEventListener('click',()=>{urlRestore.cancelled=true;renderSummary();});summaryHost().querySelector('.tw-modify').addEventListener('click',()=>{urlRestore.openWhenReady=true;});}
+      if(pendingUrl&&summaryHost()){{const tb=document.querySelector('.product-buy-buttons--root');if(tb&&canSell())tb.style.display='none';}const p=pendingUrl,extra=p.n*PRICE_PER_LETTER,base=parseInt(embed.price,10),total=isNaN(base)?null:base/100+extra;const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));summaryHost().innerHTML='<div class="tw-card tw-card--loading" aria-busy="true"><div class="tw-thumb tw-thumb--loading"><span class="tw-spin" aria-hidden="true"></span></div><div class="tw-meta"><b>Hand Embroidery</b><span>'+esc([p.text,p.font,p.thread].filter(Boolean).join(' · '))+'</span><span>'+p.n+(p.n===1?' letter':' letters')+' · <strong>+'+money(extra)+'</strong></span></div><div class="tw-links"><button type="button" class="tw-modify">Modify</button><button type="button" class="tw-remove">Remove</button></div></div><button type="button" class="tw-add" disabled>'+(total==null?'Add to cart with embroidery':'Add to cart · <span class="tw-price">'+money(total).replace(/.00$/,'')+'</span>')+'</button>';summaryHost().querySelector('.tw-remove').addEventListener('click',()=>{urlRestore.cancelled=true;renderSummary();});summaryHost().querySelector('.tw-modify').addEventListener('click',()=>{urlRestore.openWhenReady=true;});}
       else{{const t=document.querySelector('[data-threadwork-open]');if(t){t.hidden=false;syncQuiet();}}renderSummary();}
     }
     function notify(msg){const host=summaryHost();if(!shell.hidden||!host){toast(msg);return;}let n=host.querySelector('.tw-error');if(!n){n=document.createElement('p');n.className='tw-error';host.append(n);}n.textContent=msg;}
@@ -1000,15 +1002,16 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     function renderSummary(){
       const host=summaryHost();if(!host)return;
       const trigger=document.querySelector('[data-threadwork-open]'),themeBtn=document.querySelector('.product-buy-buttons--root');
-      if(themeBtn)themeBtn.style.display='none';
-      if(!saved){host.innerHTML='<button type="button" class="tw-add" data-idle="Add to Cart">Add to Cart</button>';host.querySelector('.tw-add').addEventListener('click',e=>{if(canSell())addToCart(e.currentTarget,false);});if(trigger)trigger.hidden=false;return;}
+      // The theme's own button is only replaced when the studio can actually sell; otherwise it stays and sells the blanket alone.
+      const sellable=canSell();if(themeBtn)themeBtn.style.display=sellable?'none':'';
+      if(!saved){if(!sellable){host.innerHTML='';if(trigger)trigger.hidden=false;return;}host.innerHTML='<button type="button" class="tw-add" data-idle="Add to Cart">Add to Cart</button>';host.querySelector('.tw-add').addEventListener('click',e=>tryAdd(e.currentTarget,false));if(trigger)trigger.hidden=false;return;}
       const extra=saved.n*PRICE_PER_LETTER,base=parseInt(embed.price,10),total=isNaN(base)?null:base/100+extra;const totalLabel=total==null?'Add to cart with embroidery':'Add to cart · '+money(total).replace(/\.00$/,'');
       host.innerHTML='<div class="tw-card"><img class="tw-thumb" role="button" tabindex="0" aria-label="Modify embroidery" alt="" src="'+saved.thumb+'"><div class="tw-meta"><b>Hand Embroidery</b><span>'+escapeHtml(saved.text)+' · '+escapeHtml(fonts[saved.font].name)+' · '+escapeHtml(threads[saved.thread].name)+'</span><span>'+saved.n+(saved.n===1?' letter':' letters')+' · <strong>+'+money(extra)+'</strong></span></div><div class="tw-links"><button type="button" class="tw-modify">Modify</button><button type="button" class="tw-remove">Remove</button></div></div>'+
         '<button type="button" class="tw-add" data-idle="'+(total==null?totalLabel:'Add to cart · <span class=&quot;tw-price&quot;>'+money(total).replace(/\.00$/,'')+'</span>')+'">'+(total==null?totalLabel:'Add to cart · <span class="tw-price">'+money(total).replace(/\.00$/,'')+'</span>')+'</button>';
       host.querySelector('.tw-modify').addEventListener('click',()=>openModal());
       {const th=host.querySelector('.tw-thumb');th.addEventListener('click',()=>openModal());th.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openModal();}});}
       host.querySelector('.tw-remove').addEventListener('click',()=>{saved=null;renderSummary();});
-      host.querySelector('.tw-add').addEventListener('click',e=>{if(canSell())addToCart(e.currentTarget,true);});
+      host.querySelector('.tw-add').addEventListener('click',e=>tryAdd(e.currentTarget,true));
       if(trigger)trigger.hidden=true;
     }
     function saveEmbroidery(){
