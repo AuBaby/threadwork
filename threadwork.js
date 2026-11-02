@@ -936,7 +936,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       {name:'The Popcorn Blanket',line:'popcorn',max:3,colors:['Pink Quartz','Henna','Moon Stone','Sky Blue','Citron']},
       {name:'Adult Popcorn Blanket',line:'popcorn',max:3,colors:['Henna','Cream','Moon Stone']},
       {name:'Little Love Blanket',line:'cashmere',max:20,colors:['Cloud','Butter Cream','Hydrangea','Peony','Lavande']},
-      {name:'Cashmere Cloud Baby Blanket Gift Set',line:'cashmere',max:20,colors:['Butter Cream','Peony','Hydrangea']},
+      {name:'Cashmere Cloud Gift Set',line:'cashmere',max:20,colors:['Butter Cream','Peony','Hydrangea']},
       {name:'Kid Beanie',line:'beanie',max:20,colors:['Cobalt','Charcoal','Pink Haze','Chocolate','Lavande']},
       {name:'Adult Beanie',line:'beanie',max:20,colors:['Cobalt','Charcoal','Pink Haze','Chocolate','Lavande']}
     ];
