@@ -91,7 +91,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const fontSpec = () => `180px "${fonts[state.font].family}"`;
     // Initials (two to five capitals and nothing else) are a monogram: in every face they are spaced
     // apart and stitched as separate letters, since capitals otherwise run into one another.
-    const INITIALS_GAP = 14;
+    // Centreline to centreline, since the chain has its own width (d, 2026-11-01: ink-to-ink left Pacifico
+    // a little far apart and Petit's T and P touching).
+    const INITIALS_GAP = 32;
     const initials = () => { const t = state.text.replace(/[^A-Za-z]/g, ''); return t.length >= 2 && t.length <= 5 && /^[A-Z]+$/.test(t); };
     const connected = () => fonts[state.font].connected !== false && !initials();
     const applyFont = ctx => { ctx.font = fontSpec(); ctx.letterSpacing = (fonts[state.font].tracking || 0) + 'px'; return ctx; };
@@ -509,7 +511,12 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       const chars=[...state.text].filter(ch=>ch.trim()),layout=[],right=new Map();let bbox=null;
       for(const ch of chars){
         const m=measure.measureText(ch),f=makeFontField(ch,m),rows=new Map();
-        for(let y=0;y<f.h;y++){let lo=-1,hi=-1;for(let x=0;x<f.w;x++)if(f.ink[y*f.w+x]){if(lo<0)lo=x;hi=x;}if(lo>=0)rows.set(y-f.oy,[lo-f.ox,hi-f.ox]);}
+        // Each row's ink runs; the outer edges are pulled in to the middle of their stroke (capped at the
+        // face's own stroke width, so a crossbar still ends where it ends) because the chain is sewn down
+        // the centreline at its own width: Pacifico's fat strokes and Petit's hairlines stitch the same.
+        const rowRuns=[],widths=[];for(let y=0;y<f.h;y++){const runs=[];for(let x=0;x<f.w;x++)if(f.ink[y*f.w+x]){if(runs.length&&runs[runs.length-1][1]===x-1)runs[runs.length-1][1]=x;else runs.push([x,x]);}if(runs.length){rowRuns.push([y,runs]);for(const [a,b] of runs)if(b-a<60)widths.push(b-a+1);}}
+        widths.sort((a,b)=>a-b);const stroke=widths[widths.length>>1]||1;
+        for(const [y,runs] of rowRuns){const [a0,b0]=runs[0],[a1,b1]=runs[runs.length-1];rows.set(y-f.oy,[a0+Math.min(b0-a0+1,stroke)/2-f.ox,b1-Math.min(b1-a1+1,stroke)/2-f.ox]);}
         let x=0;if(layout.length){x=-Infinity;for(const [y,[lo]] of rows){const r=right.get(y);if(r!==undefined)x=Math.max(x,r+INITIALS_GAP-lo);}if(!isFinite(x)){const b=bbox;x=b.right+INITIALS_GAP-Math.min(...[...rows.values()].map(v=>v[0]));}}
         layout.push([ch,x]);for(const [y,[,hi]] of rows)right.set(y,Math.max(right.get(y)??-Infinity,x+hi));
         const l=x-m.actualBoundingBoxLeft,r=x+m.actualBoundingBoxRight;bbox=bbox?{left:Math.min(bbox.left,l),right:Math.max(bbox.right,r),ascent:Math.max(bbox.ascent,m.actualBoundingBoxAscent),descent:Math.max(bbox.descent,m.actualBoundingBoxDescent)}:{left:l,right:r,ascent:m.actualBoundingBoxAscent,descent:m.actualBoundingBoxDescent};
