@@ -944,6 +944,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     function applyProduct(p){
       const shown=p.colors.map(c=>fabricIndex(p.line,c)).filter(i=>i>=0);
       $('fabrics').querySelectorAll('button').forEach((b,i)=>{b.hidden=!shown.includes(i);});
+      $('fabricLabel').textContent=p.line==='beanie'?'Beanie color':'Blanket color';
       setMax(p.max);if(letters(state.text)>p.max){state.text=[...clean(state.text)].slice(0,p.max).join('');$('name').value=state.text;}
       if(!shown.includes(state.fabric)&&shown.length){state.fabric=shown[0];ensureTexture(fabrics[state.fabric]).then(()=>{drawCloth();requestRender();});}
       updateControls();if(ready){makeGeometry();requestRender();}
