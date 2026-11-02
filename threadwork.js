@@ -1123,7 +1123,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       catch(error){$('loading').textContent='The lettering could not load. Refresh to try again.';console.error(error);if(embed.mode==='product'&&summaryHost()&&summaryHost().querySelector('.tw-card--loading'))renderSummary();}
     }
     init();
-window.Threadwork={mode:embed.mode,product:embed.product,flow:typeof FLOW==='undefined'?'':FLOW,root:SHADOW,open:openModal,close:closeModal,debug:()=>({monogram,paths,strokeWidth})};
+window.Threadwork={mode:embed.mode,product:embed.product,flow:typeof FLOW==='undefined'?'':FLOW,root:SHADOW,open:openModal,close:closeModal,debug:()=>({monogram,paths,strokeWidth,state,fonts,connectStrokes,closestStrokePoint,makeFontField,applyFont,wordCenterlines})};
 };
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
