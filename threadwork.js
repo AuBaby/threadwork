@@ -962,7 +962,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const PRICE_PER_LETTER=10;let MAX_LETTERS=parseInt(embed.max,10)||(embed.line==='popcorn'?3:20);
     // The cap shows in the hint, the field label (initials when 3 or fewer) and the counter.
     const POPCORN_TIP='The Popcorn is our warmest, heaviest knit. Due to the thickness, embroidery is limited to initials only. Want your full name? Check out our Sawa instead!';
-    const setMax=n=>{MAX_LETTERS=n;const v=root.querySelector('label[for=name]+.value');if(v)v.textContent='Up to '+n+' characters';const l=root.querySelector('label[for=name]');if(l)l.textContent=n<=3?'Embroidery initials':'Embroidery text';const c=root.querySelector('#charCount');if(c)c.textContent=letters(state.text)+'/'+n;const tip=root.querySelector('#lengthTip');if(tip){if(!tip.dataset.full)tip.dataset.full=tip.innerHTML;if(n<=3)tip.textContent=POPCORN_TIP;else tip.innerHTML=tip.dataset.full;}};
+    const setMax=(n,adult=/adult/i.test(embed.title||''))=>{MAX_LETTERS=n;const v=root.querySelector('label[for=name]+.value');if(v)v.textContent='Up to '+n+' characters';const l=root.querySelector('label[for=name]');if(l)l.textContent=n<=3?'Embroidery initials':'Embroidery text';const c=root.querySelector('#charCount');if(c)c.textContent=letters(state.text)+'/'+n;const tip=root.querySelector('#lengthTip');if(tip){if(!tip.dataset.full)tip.dataset.full=tip.innerHTML;if(n<=3&&!adult)tip.textContent=POPCORN_TIP;else tip.innerHTML=tip.dataset.full;}};
     setMax(MAX_LETTERS);
     // Outside a product page the studio offers the store's embroiderable products in a dropdown; picking one
     // shows only that product's colours (the same list Swatch King shows on the store) and sets its letter cap.
@@ -980,7 +980,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       const shown=p.colors.map(c=>fabricIndex(p.line,c)).filter(i=>i>=0);
       $('fabrics').querySelectorAll('button').forEach((b,i)=>{b.hidden=!shown.includes(i);});
       $('fabricLabel').textContent=p.line==='beanie'?'Beanie color':'Blanket color';
-      setMax(p.max);if(letters(state.text)>p.max){state.text=[...clean(state.text)].slice(0,p.max).join('');$('name').value=state.text;}
+      setMax(p.max,/adult/i.test(p.name));if(letters(state.text)>p.max){state.text=[...clean(state.text)].slice(0,p.max).join('');$('name').value=state.text;}
       if(!shown.includes(state.fabric)&&shown.length){state.fabric=shown[0];ensureTexture(fabrics[state.fabric]).then(()=>{drawCloth();requestRender();});}
       updateControls();if(ready){makeGeometry();requestRender();}
     }
