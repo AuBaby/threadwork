@@ -68,7 +68,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       { name:'Peony', aka:['Peony Pink'], hex:'#d7b5b0', image:ASSETS+'fabrics/cashmere-peony.webp', texture:ASSETS+'fabrics/cashmere-peony.webp', photo:true, scale:.5, line:'cashmere' },
       // Kid + Adult beanies (rib photos, placeholder).
       { name:'Charcoal', hex:'#4b4b54', image:ASSETS+'fabrics/beanie-charcoal.webp', texture:ASSETS+'fabrics/beanie-charcoal.webp', photo:true, crop:[0,.22,1,.56], scale:.3, line:'beanie' }, { name:'Chocolate', hex:'#552b20', image:ASSETS+'fabrics/beanie-chocolate.webp', texture:ASSETS+'fabrics/beanie-chocolate.webp', photo:true, crop:[0,.22,1,.56], scale:.3, line:'beanie' },
-      { name:'Cobalt', hex:'#263074', image:ASSETS+'fabrics/beanie-cobalt.webp', texture:ASSETS+'fabrics/beanie-cobalt.webp', photo:true, crop:[0,.22,1,.56], scale:.3, line:'beanie' }, { name:'Lavande', hex:'#bda3d6', image:ASSETS+'fabrics/beanie-lavande.webp', texture:ASSETS+'fabrics/beanie-lavande-knit.webp', pure:true, lift:0, scale:.5, line:'beanie' },
+      { name:'Cobalt', hex:'#263074', image:ASSETS+'fabrics/beanie-cobalt.webp', texture:ASSETS+'fabrics/beanie-cobalt.webp', photo:true, crop:[0,.22,1,.56], scale:.3, line:'beanie' }, { name:'Lavande', hex:'#ac93c3', image:ASSETS+'fabrics/beanie-lavande.webp', texture:ASSETS+'fabrics/beanie-lavande-knit.webp', whole:true, scale:.5, line:'beanie' },
       { name:'Pink Haze', hex:'#ce7980', image:ASSETS+'fabrics/beanie-pink-haze.webp', texture:ASSETS+'fabrics/beanie-pink-haze.webp', photo:true, crop:[0,.22,1,.56], scale:.3, line:'beanie' }
     ];
     const fonts = [
@@ -1132,8 +1132,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // leaving a band B beyond it to crossfade across, so the wrap never shows a hard seam.
       const B=Math.round(w*.04),at=(x,y)=>(y*w+x)*4,seam=(size,axis)=>{let best=size-B,bv=Infinity;for(let n=size-B-90;n<=size-B;n++){let sum=0;const len=axis?w:h;for(let i=0;i<len;i+=2){const a=axis?at(i,0):at(0,i),b=axis?at(i,n):at(n,i);sum+=Math.abs(px[a]-px[b])+Math.abs(px[a+1]-px[b+1])+Math.abs(px[a+2]-px[b+2]);}if(sum<bv){bv=sum;best=n;}}return best;};
       // A `pure` tile is supplied seamless at its full size, so it is used whole: no seam search, no crossfade.
-      const cw=f.pure?w:seam(w,0),ch=f.pure?h:seam(h,1),one=document.createElement('canvas');one.width=cw;one.height=ch;const og=one.getContext('2d');og.drawImage(c,0,0);
-      if(!f.pure){for(let i=0;i<B;i++){og.globalAlpha=1-i/B;og.drawImage(c,cw+i,0,1,ch,i,0,1,ch);}
+      const whole=f.pure||f.whole,cw=whole?w:seam(w,0),ch=whole?h:seam(h,1),one=document.createElement('canvas');one.width=cw;one.height=ch;const og=one.getContext('2d');og.drawImage(c,0,0);
+      if(!whole){for(let i=0;i<B;i++){og.globalAlpha=1-i/B;og.drawImage(c,cw+i,0,1,ch,i,0,1,ch);}
       for(let j=0;j<B;j++){og.globalAlpha=1-j/B;og.drawImage(c,0,ch+j,cw,1,0,j,cw,1);}}
       og.globalAlpha=1;
       // Softened slightly, so the knit sits behind the thread instead of competing with it.
