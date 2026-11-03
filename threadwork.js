@@ -74,7 +74,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const fonts = [
       // Petit is a non-connecting script: each letter carries its own entry
       // and exit flicks, so letters are stitched whole and never joined.
-      { name:'Petit', family:'Petit Formal Script', file:'PetitFormalScript-Regular.ttf', tracking:-8, connected:false, tile:{bold:true,size:19,down:1} },
+      { name:'Petit', family:'Petit Formal Script', file:'PetitFormalScript-Regular.ttf', tracking:-8, connected:false, wordSkeleton:true, tile:{bold:true,size:19,down:1} },
       { name:'Damion', family:'Damion', file:'Damion-Regular.ttf' },
       { name:'Sacramento', family:'Sacramento', file:'Sacramento-Regular.ttf', tile:{bold:true,down:2} },
       { name:'Pacifico', family:'Pacifico', file:'Pacifico-Regular.ttf', tile:{size:19} },
@@ -575,7 +575,12 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       const measure=applyFont(document.createElement('canvas').getContext('2d'));
       if(initials())monogram=monogramLayout(measure);
       const field=monogram?makeFontField(state.text,monogram.metrics,monogram.layout):makeFontField(state.text,measure.measureText(state.text));let prefix='',previous=null,placed=0;
-      for(const [index,character] of [...state.text].entries()){
+      // An unjoined face can be thinned as one piece of ink: where tight tracking runs one letter into the next
+      // (Petit's a-tail into the x), the skeleton then has a real junction there instead of two stroke ends
+      // patched together afterwards. Initials keep the per-letter path (their spacing rules need each glyph).
+      const wordSkel=!monogram&&!connected()&&fonts[state.font].wordSkeleton;
+      if(wordSkel)paths=wordCenterlines(state.text,measure.measureText(state.text));
+      else for(const [index,character] of [...state.text].entries()){
         const metrics=measure.measureText(character),origin=monogram?(character.trim()?monogram.layout[placed][1]:0):measure.measureText(prefix+character).width-metrics.width;prefix+=character;
         if(!character.trim()){previous=null;continue;}placed++;
         const last=!(state.text[index+1]||'').trim()||!connected();
