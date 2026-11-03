@@ -352,7 +352,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Treat joins as a pen-path graph. Split at real contacts, then pair the
     // most continuous directions. This preserves genuine stems and counters
     // while letting a stitch run continue across a letter/connector seam.
-    function joinPenPaths(lines){
+    function joinPenPaths(lines,pruneSpurs){
       lines=lines.filter(line=>line.length>1);const ends=lines.flatMap(line=>[line[0],line[line.length-1]]),edges=[];
       for(const line of lines){
         const arc=penArc(line),cuts=[0,arc.length];
@@ -374,6 +374,13 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         if(!node){node={p,ends:[]};nodes.push(node);}const arc=penArc(line),q=penPoint(arc,end?Math.max(0,arc.length-7):Math.min(7,arc.length)),length=Math.hypot(q.x-p.x,q.y-p.y)||1;
         const incidence={id:edge*2+end,edge,end,dx:(q.x-p.x)/length,dy:(q.y-p.y)/length};node.ends.push(incidence);incidences.push(incidence);
       }));
+      // A thinned word keeps every pen-start nub and serif stub as a short branch off a junction (Petit's x
+      // begins with a 6-unit tick where the a's tail arrives). Such a spur, shorter than a stroke and a half with
+      // a free end, is dropped before pairing, so the through-strokes pair with each other and the chain runs on.
+      const dead=new Set();
+      if(pruneSpurs){const len=edges.map(l=>penArc(l).length);
+        for(const node of nodes){if(node.ends.length<3)continue;for(const inc of node.ends){if(len[inc.edge]>12)continue;const other=nodes.find(n=>n!==node&&n.ends.some(e=>e.edge===inc.edge));if(!other||other.ends.length===1)dead.add(inc.edge);}}
+        for(const node of nodes)node.ends=node.ends.filter(e=>!dead.has(e.edge));}
       for(const node of nodes){
         const remaining=[...node.ends];while(remaining.length>1){
           let best=1.01,pair=null;for(let i=0;i<remaining.length;i++)for(let j=i+1;j<remaining.length;j++){
@@ -382,7 +389,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
           if(!pair||best>.45)break;const b=remaining.splice(pair[1],1)[0],a=remaining.splice(pair[0],1)[0];pairs.set(a.id,b.id);pairs.set(b.id,a.id);
         }
       }
-      const used=new Set(),result=[];
+      const used=new Set(dead),result=[];
       const trace=start=>{let current=start,line=[];
         while(!used.has(current>>1)){
           const edge=current>>1,end=current%2,part=end?[...edges[edge]].reverse():edges[edge];used.add(edge);line.push(...(line.length?part.slice(1):part));
@@ -390,7 +397,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         }
         if(line.length>1)result.push(line);
       };
-      for(const end of incidences)if(!pairs.has(end.id)&&!used.has(end.edge))trace(end.id);
+      for(const end of incidences)if(!pairs.has(end.id)&&!used.has(end.edge)&&!dead.has(end.edge))trace(end.id);
       for(let edge=0;edge<edges.length;edge++)if(!used.has(edge))trace(edge*2);
       return result;
     }
@@ -617,7 +624,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       }
       // Corner cutting is sampled relative to the stroke, so a tight turn in
       // a fine monoline face is rounded no more than one in a brush face.
-      paths=joinPenPaths(paths);if(!connected())trimOverlaps(paths,4.5,field);if(fonts[state.font].extendEnds)extendEnds(paths,field);paths=centerPenPaths(paths,field);paths.push(...bareInkPaths(paths,field));paths=smoothPenPaths(paths,Math.max(3,Math.min(10,strokeWidth*.42)));
+      paths=joinPenPaths(paths,!connected());if(!connected())trimOverlaps(paths,4.5,field);if(fonts[state.font].extendEnds)extendEnds(paths,field);paths=centerPenPaths(paths,field);paths.push(...bareInkPaths(paths,field));paths=smoothPenPaths(paths,Math.max(3,Math.min(10,strokeWidth*.42)));
       let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;for(const line of paths)for(const p of line){x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y);}
       // Optical centring: a heavy capital at one end and a thin flick at the other make a box-centred
       // word look shifted, so the centre is taken halfway between the box centre and the ink centroid.
