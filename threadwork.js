@@ -63,9 +63,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       { name:'Sky Blue', hex:'#90a2bb', texture:ASSETS+'fabrics/popcorn-sky-blue.webp', lift:0, pure:true, scale:.55, line:'popcorn' }, { name:'Citron', hex:'#e7df96', texture:ASSETS+'fabrics/popcorn-citron.webp', lift:0, pure:true, scale:.55, line:'popcorn' },
       { name:'Cream', hex:'#cec7b5', texture:ASSETS+'fabrics/popcorn-cream.webp', lift:0, pure:true, scale:.55, line:'popcorn' }, { name:'Moon Stone', hex:'#aba8a7', aka:['Moonstone'], texture:ASSETS+'fabrics/popcorn-knit.webp', neutral:true, lift:-.35, marl:.2, scale:.45, line:'popcorn' },
       // Little Love cashmere + the Cashmere Cloud gift sets (same knit). 'Peony Pink' is the gift set's name for Peony.
-      { name:'Butter Cream', hex:'#cdc4be', texture:ASSETS+'fabrics/littlelove-butter-cream.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' }, { name:'Cloud', hex:'#d2d1d6', texture:ASSETS+'fabrics/littlelove-cloud.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' },
-      { name:'Hydrangea', hex:'#a3bfd8', texture:ASSETS+'fabrics/littlelove-hydrangea.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' }, { name:'Lavande', hex:'#d5b9d9', texture:ASSETS+'fabrics/littlelove-lavande.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' },
-      { name:'Peony', aka:['Peony Pink'], hex:'#d4c1d1', texture:ASSETS+'fabrics/littlelove-peony.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' },
+      { name:'Butter Cream', hex:'#c1aea3', texture:ASSETS+'fabrics/littlelove-butter-cream.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' }, { name:'Cloud', hex:'#c9c0b6', texture:ASSETS+'fabrics/littlelove-cloud.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' },
+      { name:'Hydrangea', hex:'#aebcc7', texture:ASSETS+'fabrics/littlelove-hydrangea.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' }, { name:'Lavande', hex:'#d5b9d9', texture:ASSETS+'fabrics/littlelove-lavande.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' },
+      { name:'Peony', aka:['Peony Pink'], hex:'#d1b6b2', texture:ASSETS+'fabrics/littlelove-peony.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' },
       // Kid + Adult beanies (rib photos, placeholder).
       { name:'Charcoal', hex:'#4b4a4f', image:ASSETS+'fabrics/beanie-charcoal.webp', texture:ASSETS+'fabrics/beanie-charcoal-knit.webp', whole:true, wash:false, lift:.1, marl:.1, scale:.5, line:'beanie' }, { name:'Chocolate', hex:'#53271a', image:ASSETS+'fabrics/beanie-chocolate.webp', texture:ASSETS+'fabrics/beanie-chocolate-knit.webp', whole:true, wash:false, lift:.1, scale:.5, line:'beanie' },
       { name:'Cobalt', hex:'#172b9a', image:ASSETS+'fabrics/beanie-cobalt.webp', texture:ASSETS+'fabrics/beanie-cobalt-knit.webp', whole:true, wash:false, lift:.1, scale:.5, line:'beanie' }, { name:'Lavande', hex:'#b9a2cf', image:ASSETS+'fabrics/beanie-lavande.webp', texture:ASSETS+'fabrics/beanie-lavande-knit.webp', whole:true, scale:.5, line:'beanie' },
@@ -94,7 +94,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Centreline to centreline, since the chain has its own width (d, 2026-11-01: ink-to-ink left Pacifico
     // a little far apart and Petit's T and P touching).
     // Bump when any knit tile changes: the file name stays, the cache key does not.
-    const TEXTURE_VERSION='6';
+    const TEXTURE_VERSION='7';
     const INITIALS_GAP = 32;
     // The chain's own width in font units (measured on the canvas at the default weight) and the gap the
     // stitched strokes should keep in two dimensions: a hairline face needs more ink clearance than a fat one.
