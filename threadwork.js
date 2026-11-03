@@ -999,7 +999,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Lane fabrics (Little Love hearts) scale the knit with the lettering and sit the name inside a lane.
     function letterBox(){const y=letterY();if(!geometry)return{y,h:226};const s=Math.min(980/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);return{y,h:Math.max(60,geometry.height*s)};}
     function renderArtwork(){if(fabrics[state.fabric].lane)drawCloth();artwork.width=W;art.drawImage(cloth,0,0);if(state.guide)drawFontGuide();drawEmbroidery();drawView();}
-    function requestRender(){if(!ready)return;cancelAnimationFrame(raf);raf=requestAnimationFrame(renderArtwork);}
+    function requestRender(){if(!ready||(isModal()&&shell.hidden))return;cancelAnimationFrame(raf);raf=requestAnimationFrame(renderArtwork);}
     // Reading a pixel back makes Safari finish the artwork before it is
     // copied; otherwise it can composite from a stale copy of the canvas.
     function drawView(){art.getImageData(0,0,1,1);ctx.save();ctx.clearRect(0,0,W,H);ctx.fillStyle=fabrics[state.fabric].hex;ctx.fillRect(0,0,W,H);ctx.translate(W/2+state.panX,H/2+state.panY);ctx.scale(state.zoom,state.zoom);ctx.drawImage(artwork,-W/2,-H/2);ctx.restore();}
@@ -1155,7 +1155,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // A knit texture is pushed to the blanket's catalogue colour (per-channel gain on its
     // average), then cropped to the size at which its right edge best continues its left edge
     // (and bottom its top), so the lattice lines up across the repeat.
-    const loadTexture=f=>new Promise((ok,fail)=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{
+    const loadTexture=f=>new Promise((ok,fail)=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>{try{
       const cr=f.crop||[0,0,1,1],sx=Math.round(img.width*cr[0]),sy=Math.round(img.height*cr[1]),w=Math.round(img.width*cr[2]),h=Math.round(img.height*cr[3]),c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(img,sx,sy,w,h,0,0,w,h);if(f.sharpen){const id=g.getImageData(0,0,w,h),p=id.data,src=new Uint8ClampedArray(p),k=f.sharpen;for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=(y*w+x)*4;for(let ch=0;ch<3;ch++){const v=src[i+ch],blur=(src[i-4+ch]+src[i+4+ch]+src[i-w*4+ch]+src[i+w*4+ch])/4;p[i+ch]=Math.max(0,Math.min(255,v+(v-blur)*k));}}g.putImageData(id,0,0);}if(f.photo){f.photoCanvas=c;ok();return;}
       const d=g.getImageData(0,0,w,h),px=d.data,n=px.length/4,lum=i=>.299*px[i]+.587*px[i+1]+.114*px[i+2];
       // A `neutral` texture is greyed first so it can be tinted to any blanket colour (Moon Stone borrows the pink tile).
@@ -1179,7 +1179,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       og.globalAlpha=1;
       // Softened slightly, so the knit sits behind the thread instead of competing with it.
       // The blur runs over a 3x3 repeat and keeps the middle tile, so the tile edges blur into their neighbours rather than into nothing.
-      const small=document.createElement('canvas');small.width=cw*2.4;small.height=ch*2.4;const sg=small.getContext('2d');sg.scale(.8,.8);sg.fillStyle=sg.createPattern(one,'repeat');sg.fillRect(0,0,cw*3,ch*3);
+      let small=null;if(!f.pure){small=document.createElement('canvas');small.width=cw*2.4;small.height=ch*2.4;const sg=small.getContext('2d');sg.scale(.8,.8);sg.fillStyle=sg.createPattern(one,'repeat');sg.fillRect(0,0,cw*3,ch*3);}
       const m=document.createElement('canvas');m.width=cw;m.height=ch;if(f.pure)m.getContext('2d').drawImage(one,0,0);else m.getContext('2d').drawImage(small,cw*.8,ch*.8,cw*.8,ch*.8,0,0,cw,ch);
       // A marled yarn (`marl`) mottles the tile at the stitch scale: a soft blotch across a stitch and a
       // half, a per-stitch flicker and half-stitch streaks, all periodic in the tile so the repeat stays seamless.
@@ -1188,8 +1188,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         const coarse=grid(Math.round(cw/45),Math.round(ch/45)),fine=grid(Math.round(cw/22),Math.round(ch/22)),streak=grid(Math.round(cw/11),Math.round(ch/11));
         for(let y=0;y<ch;y++)for(let x=0;x<cw;x++){const i=(y*cw+x)*4,k=1+f.marl*((coarse(x,y)-.5)*.6+(fine(x,y)-.5)+(streak(x,y)-.5)*.7);mp[i]=Math.min(255,mp[i]*k);mp[i+1]=Math.min(255,mp[i+1]*k);mp[i+2]=Math.min(255,mp[i+2]*k);}
         mg.putImageData(md,0,0);}
-      f.tileCanvas=m;f.pattern=clothCtx.createPattern(m,'repeat');ok();};img.onerror=fail;img.src=/^data:/.test(f.texture)?f.texture:f.texture+(f.texture.includes('?')?'&':'?')+'v='+TEXTURE_VERSION;});
-    const ensureTexture=f=>f&&f.texture&&!f.pattern?loadTexture(f).catch(e=>{console.warn('Threadwork: texture failed, using plain stitches',f.name,e);f.texture=null;}):Promise.resolve();
+      f.tileCanvas=m;f.pattern=clothCtx.createPattern(m,'repeat');c.width=one.width=0;if(small)small.width=0;ok();}catch(e){fail(e);}};img.onerror=fail;img.src=/^data:/.test(f.texture)?f.texture:f.texture+(f.texture.includes('?')?'&':'?')+'v='+TEXTURE_VERSION;});
+    // A tile that never settles (a throw inside decode, a stalled download) must not hold the studio: after 15s the
+    // fabric falls back to plain stitches and the cart keeps working.
+    const ensureTexture=f=>f&&f.texture&&!f.pattern?Promise.race([loadTexture(f),new Promise((_,no)=>setTimeout(()=>no(new Error('texture timed out')),15000))]).catch(e=>{console.warn('Threadwork: texture failed, using plain stitches',f.name,e);f.texture=null;}):Promise.resolve();
     async function init(){
       for(const f of fonts)if(f.kit&&!f.pending){const l=document.createElement('link');l.rel='stylesheet';l.href=f.kit;document.head.append(l);}
       try{await Promise.all([...fonts.filter(f=>!f.pending).map(f=>document.fonts.load(`180px "${f.family}"`)),ensureTexture(fabrics[state.fabric])]);if(!(await document.fonts.load(fontSpec())).length)throw new Error('Font unavailable');drawCloth();makeGeometry();ready=true;updateControls();requestRender();$('loading').classList.add('done');centerCard();restoreFromUrl();}
