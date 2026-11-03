@@ -67,7 +67,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       { name:'Hydrangea', hex:'#aebcc7', texture:ASSETS+'fabrics/littlelove-hydrangea.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' }, { name:'Lavande', hex:'#d5b9d9', texture:ASSETS+'fabrics/littlelove-lavande.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' },
       { name:'Peony', aka:['Peony Pink'], hex:'#d1b6b2', texture:ASSETS+'fabrics/littlelove-peony.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' },
       // Kid + Adult beanies (rib photos, placeholder).
-      { name:'Charcoal', hex:'#37363c', image:ASSETS+'fabrics/beanie-charcoal.webp', texture:ASSETS+'fabrics/beanie-charcoal-knit.webp', whole:true, wash:false, lift:.1, marl:.18, scale:.5, line:'beanie' }, { name:'Chocolate', hex:'#53271a', image:ASSETS+'fabrics/beanie-chocolate.webp', texture:ASSETS+'fabrics/beanie-chocolate-knit.webp', whole:true, wash:false, lift:.1, scale:.5, line:'beanie' },
+      { name:'Charcoal', hex:'#2c2b31', image:ASSETS+'fabrics/beanie-charcoal.webp', texture:ASSETS+'fabrics/beanie-charcoal-knit.webp', whole:true, wash:false, lift:.05, marl:.28, fleck:{density:.0032,len:16,width:2,gain:65}, scale:.5, line:'beanie' }, { name:'Chocolate', hex:'#53271a', image:ASSETS+'fabrics/beanie-chocolate.webp', texture:ASSETS+'fabrics/beanie-chocolate-knit.webp', whole:true, wash:false, lift:.1, scale:.5, line:'beanie' },
       { name:'Cobalt', hex:'#172b9a', image:ASSETS+'fabrics/beanie-cobalt.webp', texture:ASSETS+'fabrics/beanie-cobalt-knit.webp', whole:true, wash:false, lift:.1, scale:.5, line:'beanie' }, { name:'Lavande', hex:'#b9a2cf', image:ASSETS+'fabrics/beanie-lavande.webp', texture:ASSETS+'fabrics/beanie-lavande-knit.webp', whole:true, scale:.5, line:'beanie' },
       { name:'Pink Haze', hex:'#ce8085', image:ASSETS+'fabrics/beanie-pink-haze.webp', texture:ASSETS+'fabrics/beanie-pink-haze-knit.webp', whole:true, marl:.1, scale:.5, line:'beanie' }
     ];
@@ -1208,6 +1208,12 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         const coarse=grid(Math.round(cw/45),Math.round(ch/45)),fine=grid(Math.round(cw/22),Math.round(ch/22)),streak=grid(Math.round(cw/11),Math.round(ch/11));
         for(let y=0;y<ch;y++)for(let x=0;x<cw;x++){const i=(y*cw+x)*4,k=1+f.marl*((coarse(x,y)-.5)*.6+(fine(x,y)-.5)+(streak(x,y)-.5)*.7);mp[i]=Math.min(255,mp[i]*k);mp[i+1]=Math.min(255,mp[i+1]*k);mp[i+2]=Math.min(255,mp[i+2]*k);}
         mg.putImageData(md,0,0);}
+      // A heathered yarn (`fleck`) carries pale fibres: light dashes along the rib, `width` pixels wide and up to
+      // `len` long, scattered at `density` per pixel, `gain` brighter. Positions wrap inside the tile, so the repeat stays seamless.
+      if(f.fleck){const mg=m.getContext('2d'),md=mg.getImageData(0,0,cw,ch),mp=md.data,r=random(777),count=Math.round(cw*ch*f.fleck.density),wd=f.fleck.width||1;
+        for(let s=0;s<count;s++){const x0=Math.floor(r()*cw),y0=Math.floor(r()*ch),len=1+Math.floor(r()*f.fleck.len),g=f.fleck.gain*(.5+r());
+          for(let t=0;t<len;t++)for(let dx=0;dx<wd;dx++){const i=(((y0+t)%ch)*cw+(x0+dx)%cw)*4;mp[i]=Math.min(255,mp[i]+g);mp[i+1]=Math.min(255,mp[i+1]+g);mp[i+2]=Math.min(255,mp[i+2]+g);}}
+        mg.putImageData(md,0,0);}
       f.tileCanvas=m;f.pattern=clothCtx.createPattern(m,'repeat');c.width=one.width=0;if(small)small.width=0;ok();}catch(e){fail(e);}};img.onerror=fail;img.src=/^data:/.test(f.texture)?f.texture:f.texture+(f.texture.includes('?')?'&':'?')+'v='+TEXTURE_VERSION;});
     // A tile that never settles (a throw inside decode, a stalled download) must not hold the studio: after 15s the
     // fabric falls back to plain stitches and the cart keeps working.
@@ -1218,7 +1224,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       catch(error){$('loading').textContent='The lettering could not load. Refresh to try again.';console.error(error);if(embed.mode==='product'&&summaryHost()&&summaryHost().querySelector('.tw-card--loading'))renderSummary();}
     }
     init();
-window.Threadwork={mode:embed.mode,product:embed.product,flow:typeof FLOW==='undefined'?'':FLOW,root:SHADOW,open:openModal,close:closeModal,debug:()=>({monogram,paths,strokeWidth,state,fonts,fabrics,ensureTexture,connectStrokes,closestStrokePoint,makeFontField,applyFont,wordCenterlines})};
+window.Threadwork={mode:embed.mode,product:embed.product,flow:typeof FLOW==='undefined'?'':FLOW,root:SHADOW,open:openModal,close:closeModal,debug:()=>({monogram,paths,strokeWidth,state,fonts,fabrics,ensureTexture,connectStrokes,closestStrokePoint,makeFontField,applyFont,wordCenterlines,renderArtwork,snapshotJpeg,inkBounds})};
 };
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
