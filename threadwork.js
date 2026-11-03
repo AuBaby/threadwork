@@ -93,6 +93,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // apart and stitched as separate letters, since capitals otherwise run into one another.
     // Centreline to centreline, since the chain has its own width (d, 2026-11-01: ink-to-ink left Pacifico
     // a little far apart and Petit's T and P touching).
+    // Bump when any knit tile changes: the file name stays, the cache key does not.
+    const TEXTURE_VERSION='3';
     const INITIALS_GAP = 32;
     // The chain's own width in font units (measured on the canvas at the default weight) and the gap the
     // stitched strokes should keep in two dimensions: a hairline face needs more ink clearance than a fat one.
@@ -1141,7 +1143,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         const coarse=grid(Math.round(cw/45),Math.round(ch/45)),fine=grid(Math.round(cw/22),Math.round(ch/22)),streak=grid(Math.round(cw/11),Math.round(ch/11));
         for(let y=0;y<ch;y++)for(let x=0;x<cw;x++){const i=(y*cw+x)*4,k=1+f.marl*((coarse(x,y)-.5)*.6+(fine(x,y)-.5)+(streak(x,y)-.5)*.7);mp[i]=Math.min(255,mp[i]*k);mp[i+1]=Math.min(255,mp[i+1]*k);mp[i+2]=Math.min(255,mp[i+2]*k);}
         mg.putImageData(md,0,0);}
-      f.pattern=clothCtx.createPattern(m,'repeat');ok();};img.onerror=fail;img.src=f.texture;});
+      f.pattern=clothCtx.createPattern(m,'repeat');ok();};img.onerror=fail;img.src=/^data:/.test(f.texture)?f.texture:f.texture+(f.texture.includes('?')?'&':'?')+'v='+TEXTURE_VERSION;});
     const ensureTexture=f=>f&&f.texture&&!f.pattern?loadTexture(f).catch(e=>{console.warn('Threadwork: texture failed, using plain stitches',f.name,e);f.texture=null;}):Promise.resolve();
     async function init(){
       for(const f of fonts)if(f.kit&&!f.pending){const l=document.createElement('link');l.rel='stylesheet';l.href=f.kit;document.head.append(l);}
