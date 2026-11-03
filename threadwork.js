@@ -696,6 +696,11 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
           if(side){line.splice(line.length-cut);line[line.length-1]=snap;}else{line.splice(0,cut);line[0]=snap;}
         }
       }
+      // Two stroke ends that stop within a stroke width of each other inside shared ink (the a's tail and
+      // the z's start) would cross as two chains; they are pulled together to their midpoint so one runs
+      // into the other, the way the hand would.
+      const ends=[];for(const l of lines)if(l.length>=8)ends.push({l,i:0},{l,i:l.length-1});
+      for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++){const A=ends[a],B=ends[b];if(A.l===B.l)continue;const p=A.l[A.i],q=B.l[B.i],d=Math.hypot(p.x-q.x,p.y-q.y);if(d<.5||d>tol*2)continue;const m={x:(p.x+q.x)/2,y:(p.y+q.y)/2};A.l[A.i]={...m};B.l[B.i]={...m};}
     }
     function wordCenterlines(character,metrics){
       const key=fonts[state.font].family+'|'+character;
