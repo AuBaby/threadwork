@@ -68,7 +68,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       { name:'Peony', aka:['Peony Pink'], hex:'#d4c1d1', texture:ASSETS+'fabrics/littlelove-peony.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' },
       // Kid + Adult beanies (rib photos, placeholder).
       { name:'Charcoal', hex:'#4b4a4f', image:ASSETS+'fabrics/beanie-charcoal.webp', texture:ASSETS+'fabrics/beanie-charcoal-knit.webp', whole:true, wash:false, lift:.1, marl:.1, scale:.5, line:'beanie' }, { name:'Chocolate', hex:'#53271a', image:ASSETS+'fabrics/beanie-chocolate.webp', texture:ASSETS+'fabrics/beanie-chocolate-knit.webp', whole:true, wash:false, lift:.1, scale:.5, line:'beanie' },
-      { name:'Cobalt', hex:'#172b9a', image:ASSETS+'fabrics/beanie-cobalt.webp', texture:ASSETS+'fabrics/beanie-cobalt-knit.webp', whole:true, wash:false, lift:.1, scale:.5, line:'beanie' }, { name:'Lavande', hex:'#ac93c3', image:ASSETS+'fabrics/beanie-lavande.webp', texture:ASSETS+'fabrics/beanie-lavande-knit.webp', whole:true, scale:.5, line:'beanie' },
+      { name:'Cobalt', hex:'#172b9a', image:ASSETS+'fabrics/beanie-cobalt.webp', texture:ASSETS+'fabrics/beanie-cobalt-knit.webp', whole:true, wash:false, lift:.1, scale:.5, line:'beanie' }, { name:'Lavande', hex:'#b9a2cf', image:ASSETS+'fabrics/beanie-lavande.webp', texture:ASSETS+'fabrics/beanie-lavande-knit.webp', whole:true, scale:.5, line:'beanie' },
       { name:'Pink Haze', hex:'#ce8085', image:ASSETS+'fabrics/beanie-pink-haze.webp', texture:ASSETS+'fabrics/beanie-pink-haze-knit.webp', whole:true, marl:.1, scale:.5, line:'beanie' }
     ];
     const fonts = [
