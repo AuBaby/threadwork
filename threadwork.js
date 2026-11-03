@@ -42,12 +42,13 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
   document.addEventListener('theme:cart:updated',()=>syncQuiet());
     // The twelve thread colours offered on the store.
     const threads = [
+      // Rainbow order (D, 2026-11-03): white, cream, then pink → red → ochre → yellow → jade → teal → ice → navy → purple, grey last.
       { name:'White', hex:'#ffffff' }, { name:'Cream', hex:'#fafaeb', yarn:'#e9dfc0' },
       { name:'Baby Pink', hex:'#edbbd3' }, { name:'Red', hex:'#c11c1c', yarn:'#9c2a2c' },
-      { name:'Yellow', hex:'#e9e194' }, { name:'Ice', hex:'#c9e5f5', yarn:'#b2d0dd' },
+      { name:'Ochre', hex:'#b06800' }, { name:'Yellow', hex:'#e9e194' },
       { name:'Jade', hex:'#a7d9b2', yarn:'#a7cca9' }, { name:'Teal', hex:'#40b0d0' },
-      { name:'Purple', hex:'#c0baec' }, { name:'Grey', hex:'#acbbba' },
-      { name:'Navy', hex:'#27497e' }, { name:'Ochre', hex:'#b06800' }
+      { name:'Ice', hex:'#c9e5f5', yarn:'#b2d0dd' }, { name:'Navy', hex:'#27497e' },
+      { name:'Purple', hex:'#c0baec' }, { name:'Grey', hex:'#acbbba' }
     ];
     const fabrics = [
       // Every blanket is a cleaned-up knit image (Codex): `image` is its swatch, `hex` the average colour of the original photo.
