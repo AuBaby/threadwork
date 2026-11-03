@@ -708,9 +708,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       for(const line of lines){if(line.length<8)continue;const others=lines.filter(l=>l!==line&&l.length>=8);if(!others.length)continue;
         for(const side of [0,1]){const i=side?line.length-1:0,E=line[i],h=closestStrokePoint(E,others);if(h.distance>tol||!h.line||h.index<1)continue;const O=h.line,q=h.point;
           const toStart=arc(O,0,h.index-1)+Math.hypot(q.x-O[h.index-1].x,q.y-O[h.index-1].y),toEnd=Math.hypot(O[h.index].x-q.x,O[h.index].y-q.y)+arc(O,h.index,O.length-1);
-          if(toStart>.5&&toStart<=12&&O.length-h.index>=4){O.splice(0,h.index);O.unshift({...q});}
-          else if(toEnd>.5&&toEnd<=12&&h.index>=4){O.splice(h.index);O.push({...q});}
-          line[i]={...q};
+          // The stub itself stays (cutting it leaves bare ink that bareInkPaths would stitch back as a loose
+          // piece); the meeting end is snapped onto the stroke so the chains touch in one place.
+          if(toStart<=12||toEnd<=12)line[i]={...q};
         }
       }
     }
