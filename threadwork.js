@@ -956,7 +956,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Resetting the width wipes the bitmap outright; Safari can leave stale
     // patches of a shadowed canvas behind after a plain clearRect.
     // Lane fabrics (Little Love hearts) scale the knit with the lettering and sit the name inside a lane.
-    function letterBox(){const y=letterY();if(!geometry)return{y,h:180*.75};const s=Math.min(980/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);return{y,h:Math.max(60,geometry.height*s)};}
+    function letterBox(){const y=letterY();if(!geometry)return{y,h:226};const s=Math.min(980/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);return{y,h:Math.max(60,geometry.height*s)};}
     function renderArtwork(){if(fabrics[state.fabric].lane)drawCloth();artwork.width=W;art.drawImage(cloth,0,0);if(state.guide)drawFontGuide();drawEmbroidery();drawView();}
     function requestRender(){if(!ready)return;cancelAnimationFrame(raf);raf=requestAnimationFrame(renderArtwork);}
     // Reading a pixel back makes Safari finish the artwork before it is
