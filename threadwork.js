@@ -350,6 +350,15 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       let lo=0,hi=arc.s.length-1;while(hi-lo>1){const mid=(lo+hi)>>1;if(arc.s[mid]<s)lo=mid;else hi=mid;}
       const t=(s-arc.s[lo])/(arc.s[hi]-arc.s[lo]||1),a=arc.line[lo],b=arc.line[hi];return{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};
     }
+    // The index `reach` units along a stroke from one of its ends (end 0 = its start, 1 = its finish).
+    function alongStroke(line,end,reach){const n=line.length,step=end?-1:1;let k=end?n-1:0,arc=0;while(arc<reach&&k+step>=0&&k+step<n){arc+=Math.hypot(line[k+step].x-line[k].x,line[k+step].y-line[k].y);k+=step;}return k;}
+    // Where one stroke runs on into the next a little to one side (the a's tail into the x's pen-start, a
+    // stroke width over) the hand does not stop and start again: it eases across in one sweep. The sweep
+    // is a cubic from p to q that leaves along tp and arrives along tq, sampled about a unit apart
+    // (interior points only; p and q stay on their own strokes).
+    function penSweep(p,tp,q,tq){const d=Math.hypot(q.x-p.x,q.y-p.y),n=Math.max(2,Math.ceil(d)),out=[];
+      for(let i=1;i<n;i++){const t=i/n,t2=t*t,t3=t2*t,h0=2*t3-3*t2+1,h1=t3-2*t2+t,h2=3*t2-2*t3,h3=t3-t2;out.push({x:h0*p.x+h1*tp.x*d+h2*q.x+h3*tq.x*d,y:h0*p.y+h1*tp.y*d+h2*q.y+h3*tq.y*d});}
+      return out;}
     // Treat joins as a pen-path graph. Split at real contacts, then pair the
     // most continuous directions. This preserves genuine stems and counters
     // while letting a stitch run continue across a letter/connector seam.
@@ -605,10 +614,11 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
           let connector=best?best.route:connectStrokes(previous.exit,entry,field,bounds);
           // Stop as soon as the connector meets the next pen stroke. Drawing
           // the rest of a brush-font join would duplicate its downstroke.
+          let landed=null;
           for(let k=1;k<connector.length;k++){
             const p=connector[k];if(p.x<origin-5)continue;
             const hit=closestStrokePoint(p,glyphPaths);
-            if(hit.distance<5.5){connector=connector.slice(0,k);connector.push(hit.point);break;}
+            if(hit.distance<5.5){connector=connector.slice(0,k);connector.push(hit.point);landed=hit;break;}
           }
           // Discard any initial route that merely retraces the previous
           // glyph, then begin exactly on its last contact with the join.
@@ -619,7 +629,35 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
           }
           // A very short join can be trimmed down to its start; keep a
           // straight segment to the entry so the chain never breaks.
-          if(connector.length>1){connector=[from,...connector.slice(leave+1)];if(connector.length<2)connector.push({...entry});paths.push(connector);}
+          if(connector.length>1){connector=[from,...connector.slice(leave+1)];if(connector.length<2)connector.push({...entry});}
+          // A join that lands part-way along the next letter's own lead-in (Damion's x begins under the a's
+          // tail) leaves the lead-in's start as a short free stub lying in ink the a already stitches: sewn, it
+          // doubles the tail and knots at both ends. A stub of up to 30 units that runs its whole length through
+          // the previous letter's ink is dropped, and the join is sewn as one sweep, from a stroke width back on
+          // the exit stroke to a stroke width into the lead-in along both strokes' own directions, so the chain
+          // runs a → x unbroken. Where no sweep can be laid (the exit is mid-stroke, the strokes head apart, or
+          // it would leave the ink) only the stub is cut and the join still meets the lead-in end to end.
+          if(landed&&landed.line&&connector.length>1){const O=landed.line,L=landed.point,j=landed.index,n=O.length,arcOf=(i0,i1)=>{let t=0;for(let i=i0+1;i<=i1;i++)t+=Math.hypot(O[i].x-O[i-1].x,O[i].y-O[i-1].y);return t;};
+            const arcs=[arcOf(0,j-1)+Math.hypot(L.x-O[j-1].x,L.y-O[j-1].y),Math.hypot(O[j].x-L.x,O[j].y-L.y)+arcOf(j,n-1)];
+            // The stub is the side of the stroke beyond the landing whose far end is free (the other side runs on
+            // into the letter); where both are free the shorter one.
+            const isFree=s=>{const t=s?O[n-1]:O[0];return Math.hypot(O[0].x-O[n-1].x,O[0].y-O[n-1].y)>1&&glyphPaths.every(l=>l===O||closestStrokePoint(t,[l]).distance>1);};
+            let side=-1;for(const s of [0,1])if(arcs[s]>1&&arcs[s]<=30&&isFree(s)&&(side<0||arcs[s]<arcs[side]))side=s;
+            const stub=side<0?0:arcs[side],tip=side?O[n-1]:O[0];
+            const inkRun=(p,q)=>{const d=Math.hypot(q.x-p.x,q.y-p.y),m=Math.max(1,Math.ceil(d));for(let i=0;i<=m;i++){const t=i/m;if(!onInk(p.x+(q.x-p.x)*t,p.y+(q.y-p.y)*t))return false;}return true;};
+            const doubled=p=>{const h=closestStrokePoint(p,previous.paths);return h.distance<12&&inkRun(p,h.point);};
+            const samples=[tip],pts=side?O.slice(j):O.slice(0,j).reverse();let acc=0;for(let i=1;i<pts.length;i++){acc+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);if(acc>=3){samples.push(pts[i]);acc=0;}}
+            if(side>=0&&samples.every(doubled)){
+              if(side){O.splice(j);O.push({...L});}else{O.splice(0,j);O.unshift({...L});}
+              const ex=previous.exit,atExit=(l,e)=>Math.hypot(l[e?l.length-1:0].x-ex.x,l[e?l.length-1:0].y-ex.y)<.6,EL=previous.paths.find(l=>l.length>=8&&(atExit(l,1)||atExit(l,0))&&Math.hypot(l[0].x-l[l.length-1].x,l[0].y-l[l.length-1].y)>1);
+              if(EL){const eEnd=atExit(EL,1)?1:0,kP=alongStroke(EL,eEnd,8),kPt=alongStroke(EL,eEnd,12),kQ=alongStroke(O,side,8),kQt=alongStroke(O,side,12),unit=(x,y)=>{const l=Math.hypot(x,y)||1;return{x:x/l,y:y/l};};
+                const tE=unit(EL[kP].x-EL[kPt].x,EL[kP].y-EL[kPt].y),tS=unit(O[kQt].x-O[kQ].x,O[kQt].y-O[kQ].y);
+                let sweep=kP!==kPt&&kQ!==kQt&&tE.x*tS.x+tE.y*tS.y>.5?penSweep(EL[kP],tE,O[kQ],tS):null;if(sweep&&sweep.some(s=>!onInk(s.x,s.y)))sweep=null;
+                if(sweep){if(eEnd)EL.splice(kP+1);else EL.splice(0,kP);if(side)O.splice(kQ+1);else O.splice(0,kQ);connector=[{...EL[eEnd?EL.length-1:0]},...sweep,{...O[side?O.length-1:0]}];}
+              }
+            }
+          }
+          if(connector.length>1)paths.push(connector);
         }
         paths.push(...glyphPaths);previous={exit,paths:glyphPaths};
       }
@@ -690,7 +728,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // the z's start) would cross as two chains; they are pulled together to their midpoint so one runs
       // into the other, the way the hand would.
       const ends=[];for(const l of lines)if(l.length>=8)ends.push({l,i:0},{l,i:l.length-1});
-      for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++){const A=ends[a],B=ends[b];if(A.l===B.l)continue;const p=A.l[A.i],q=B.l[B.i],d=Math.hypot(p.x-q.x,p.y-q.y);if(d<.5||d>tol*2.2)continue;
+      for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++){const A=ends[a],B=ends[b];if(A.gone||B.gone||A.l===B.l)continue;const p=A.l[A.i],q=B.l[B.i],d=Math.hypot(p.x-q.x,p.y-q.y);if(d<.5||d>tol*2.2)continue;
         // Ends that already coincide (a real junction from whole-word thinning) still get the hairpin and detour
         // treatment below; only the pull-together is skipped for them.
         const m={x:(p.x+q.x)/2,y:(p.y+q.y)/2};if(d>=.5){A.l[A.i]={...m};B.l[B.i]={...m};}
@@ -700,6 +738,23 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         const travel=(L,i)=>{const n=L.length,j=i===0?Math.min(6,n-1):Math.max(n-7,0);return unit(L[i].x-L[j].x,L[i].y-L[j].y);};
         const nubCut=(L,i,v)=>{const n=L.length,step=i===0?1:-1;let arc=0,prev=L[i],k=i;for(let c=1;c<n-4&&c<60;c++){k+=step;const pt=L[k];arc+=Math.hypot(pt.x-prev.x,pt.y-prev.y);prev=pt;if(arc>10)return null;const w=unit(pt.x-m.x,pt.y-m.y);if(w.x*v.x+w.y*v.y>.35)return c;}return null;};
         const vA=travel(A.l,A.i),vB=travel(B.l,B.i);
+        // One stroke running on into the next a stroke width to one side (the a's tail into the x's pen-start,
+        // both ends now pulled to m) is sewn as one chain, not two chains meeting at a lump: where an end runs
+        // into a start and the two are heading the same way, the hand eases across in a single sweep between
+        // the points a stroke width back on each. The sweep must keep to the ink (a few units of cloth hide
+        // under the chain); failing that the two are simply spliced at m. Two ends meeting (the a's tail and
+        // the z's bar, traced towards each other) or a corner are left to the hairpin and detour rules below.
+        if(vA.x*vB.x+vA.y*vB.y<=-.35&&(A.i===0)!==(B.i===0)){const E=A.i===0?B:A,S=A.i===0?A:B,EL=E.l,SL=S.l;
+          if(Math.hypot(SL[0].x-SL[SL.length-1].x,SL[0].y-SL[SL.length-1].y)>1&&Math.hypot(EL[0].x-EL[EL.length-1].x,EL[0].y-EL[EL.length-1].y)>1){
+            const kP=alongStroke(EL,1,12),kPt=alongStroke(EL,1,16),kQ=alongStroke(SL,0,12),kQt=alongStroke(SL,0,16);
+            const tE=unit(EL[kP].x-EL[kPt].x,EL[kP].y-EL[kPt].y),tS=unit(SL[kQt].x-SL[kQ].x,SL[kQt].y-SL[kQ].y);
+            // Under the chain, half a chain's width (4 units) of cloth either side of the thread never shows.
+            const near=(x,y)=>!inkAt||[[0,0],[2.5,0],[-2.5,0],[0,2.5],[0,-2.5],[4,0],[-4,0],[0,4],[0,-4],[2.8,2.8],[-2.8,2.8],[2.8,-2.8],[-2.8,-2.8]].some(([dx,dy])=>inkAt(x+dx,y+dy));
+            let sweep=kP!==kPt&&kQ!==kQt&&tE.x*tS.x+tE.y*tS.y>.7?penSweep(EL[kP],tE,SL[kQ],tS):null;if(sweep&&sweep.filter(s=>!near(s.x,s.y)).length>2)sweep=null;
+            // The sweep is the hand's own line across the gap: recentring would drag each end of it into the
+            // middle of the blob it grazes and put the sideways jog back, so its points are held where they are.
+            if(sweep){sweep.forEach(s=>s.fixed=true);EL.splice(kP+1,EL.length,...sweep,...SL.slice(kQ));}else EL.push(...SL.slice(1));
+            lines.splice(lines.indexOf(SL),1);for(const e of ends)if(e.l===SL){if(e===S)e.gone=true;else{e.l=EL;e.i=EL.length-1;}}E.gone=true;continue;}}
         if(vA.x*vB.x+vA.y*vB.y>-.35){const cB=nubCut(B.l,B.i,vA),cA=nubCut(A.l,A.i,{x:-vB.x,y:-vB.y});
           const cut=(E,c)=>{if(E.i===0){E.l.splice(0,c);E.l.unshift({...m});}else{E.l.splice(E.l.length-c);E.l.push({...m});E.i=E.l.length-1;}};
           if(cB!==null&&(cA===null||cB<=cA))cut(B,cB);else if(cA!==null)cut(A,cA);}
