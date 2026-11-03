@@ -657,10 +657,14 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     function extendEnds(lines,field){
       const {w,h,ink,ox,oy}=field,inside=(x,y)=>{const ix=Math.round(x+ox),iy=Math.round(y+oy);return ix>=0&&ix<w&&iy>=0&&iy<h&&ink[iy*w+ix]===1;};
       const span=(x,y,nx,ny)=>{let l=0,r=0;while(l<24&&inside(x-nx*l,y-ny*l))l+=.5;while(r<24&&inside(x+nx*r,y+ny*r))r+=.5;return{l,r};};
+      // Two ends that already meet (a join landing on the next stroke, or one stroke of a letter running into
+      // the next) are left alone: walking both on would stitch the same ink twice and tie a knot (Petit a→z).
+      const ends=[];for(const l of lines)if(l.length)ends.push({line:l,x:l[0].x,y:l[0].y},{line:l,x:l[l.length-1].x,y:l[l.length-1].y});
       for(const line of lines){
         if(line.length<24||Math.hypot(line[0].x-line[line.length-1].x,line[0].y-line[line.length-1].y)<1)continue;
         for(const side of [0,1]){
           const at=i=>side?line[line.length-1-i]:line[i];
+          {const e0=at(0);if(ends.some(q=>q.line!==line&&Math.hypot(q.x-e0.x,q.y-e0.y)<4))continue;}
           let own=Infinity;for(let i=6;i<=18;i+=3){const a=at(i+1),b=at(i-1),q=at(i),l=Math.hypot(b.x-a.x,b.y-a.y)||1,sp=span(q.x,q.y,-(b.y-a.y)/l,(b.x-a.x)/l);if(sp.l+sp.r>0)own=Math.min(own,sp.l+sp.r);}
           if(!isFinite(own))continue;
           const e=at(0),b=at(6);let tx=e.x-b.x,ty=e.y-b.y;const len=Math.hypot(tx,ty)||1;tx/=len;ty/=len;
