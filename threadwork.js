@@ -636,7 +636,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       }
       // Corner cutting is sampled relative to the stroke, so a tight turn in
       // a fine monoline face is rounded no more than one in a brush face.
-      paths=joinPenPaths(paths);if(fonts[state.font].extendEnds)extendEnds(paths,field);paths=centerPenPaths(paths,field);paths.push(...bareInkPaths(paths,field));paths=smoothPenPaths(paths,Math.max(3,Math.min(10,strokeWidth*.42)));
+      paths=joinPenPaths(paths);if(!connected())trimOverlaps(paths,4.5);if(fonts[state.font].extendEnds)extendEnds(paths,field);paths=centerPenPaths(paths,field);paths.push(...bareInkPaths(paths,field));paths=smoothPenPaths(paths,Math.max(3,Math.min(10,strokeWidth*.42)));
       let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;for(const line of paths)for(const p of line){x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y);}
       // Optical centring: a heavy capital at one end and a thin flick at the other make a box-centred
       // word look shifted, so the centre is taken halfway between the box centre and the ink centroid.
@@ -681,6 +681,19 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
           added.splice(Math.max(0,added.length-Math.round(own*.2)));
           if(added.length<2)continue;
           if(side)line.push(...added);else line.unshift(...added.reverse());
+        }
+      }
+    }
+    // An unjoined face is thinned letter by letter, so where tight tracking runs one letter's stroke on
+    // into the next (Petit's a-tail into the z's top bar) both ends are stitched along the same ink and the
+    // chain doubles back into a knot. A stroke end that runs along another stroke is cut back (at most 15
+    // units) to where they first meet, and snapped onto the other stroke so the two touch exactly once.
+    function trimOverlaps(lines,tol){
+      for(const line of lines){if(line.length<8)continue;const others=lines.filter(l=>l!==line);if(!others.length)continue;
+        for(const side of [0,1]){const idx=i=>side?line.length-1-i:i;let cut=0,len=0,hit=null;
+          for(let i=0;i<line.length-4;i++){const p=line[idx(i)],h=closestStrokePoint(p,others);if(h.distance>tol)break;if(i>0)len+=Math.hypot(p.x-line[idx(i-1)].x,p.y-line[idx(i-1)].y);if(len>15)break;cut=i;hit=h;}
+          if(cut<1||!hit)continue;const snap={...hit.point};
+          if(side){line.splice(line.length-cut);line[line.length-1]=snap;}else{line.splice(0,cut);line[0]=snap;}
         }
       }
     }
