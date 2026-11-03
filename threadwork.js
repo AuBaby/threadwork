@@ -74,7 +74,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const fonts = [
       // Petit is a non-connecting script: each letter carries its own entry
       // and exit flicks, so letters are stitched whole and never joined.
-      { name:'Petit', family:'Petit Formal Script', file:'PetitFormalScript-Regular.ttf', tracking:-8, connected:false, wordSkeleton:true, tile:{bold:true,size:19,down:1} },
+      { name:'Petit', family:'Petit Formal Script', file:'PetitFormalScript-Regular.ttf', tracking:-8, connected:false, tile:{bold:true,size:19,down:1} },
       { name:'Damion', family:'Damion', file:'Damion-Regular.ttf' },
       { name:'Sacramento', family:'Sacramento', file:'Sacramento-Regular.ttf', tile:{bold:true,down:2} },
       { name:'Pacifico', family:'Pacifico', file:'Pacifico-Regular.ttf', tile:{size:19} },
@@ -624,7 +624,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       }
       // Corner cutting is sampled relative to the stroke, so a tight turn in
       // a fine monoline face is rounded no more than one in a brush face.
-      paths=joinPenPaths(paths,!connected());if(!connected())trimOverlaps(paths,4.5,field);if(fonts[state.font].extendEnds)extendEnds(paths,field);paths=centerPenPaths(paths,field);paths.push(...bareInkPaths(paths,field));paths=smoothPenPaths(paths,Math.max(3,Math.min(10,strokeWidth*.42)));
+      paths=joinPenPaths(paths,false);if(!connected())trimOverlaps(paths,4.5,field);if(fonts[state.font].extendEnds)extendEnds(paths,field);paths=centerPenPaths(paths,field);paths.push(...bareInkPaths(paths,field));paths=smoothPenPaths(paths,Math.max(3,Math.min(10,strokeWidth*.42)));
       let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;for(const line of paths)for(const p of line){x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y);}
       // Optical centring: a heavy capital at one end and a thin flick at the other make a box-centred
       // word look shifted, so the centre is taken halfway between the box centre and the ink centroid.
@@ -689,7 +689,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // the z's start) would cross as two chains; they are pulled together to their midpoint so one runs
       // into the other, the way the hand would.
       const ends=[];for(const l of lines)if(l.length>=8)ends.push({l,i:0},{l,i:l.length-1});
-      for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++){const A=ends[a],B=ends[b];if(A.l===B.l)continue;const p=A.l[A.i],q=B.l[B.i],d=Math.hypot(p.x-q.x,p.y-q.y);if(d>tol*2.2)continue;
+      for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++){const A=ends[a],B=ends[b];if(A.l===B.l)continue;const p=A.l[A.i],q=B.l[B.i],d=Math.hypot(p.x-q.x,p.y-q.y);if(d<.5||d>tol*2.2)continue;
         // Ends that already coincide (a real junction from whole-word thinning) still get the hairpin and detour
         // treatment below; only the pull-together is skipped for them.
         const m={x:(p.x+q.x)/2,y:(p.y+q.y)/2};if(d>=.5){A.l[A.i]={...m};B.l[B.i]={...m};}
@@ -711,8 +711,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
             const walk=(E,max)=>{const out=[],n=E.l.length,step=E.i===0?1:-1;let arc=0,k=E.i;for(let c=1;c<n-4&&c<120;c++){k+=step;const p=E.l[k];arc+=Math.hypot(p.x-E.l[k-step].x,p.y-E.l[k-step].y);if(arc>max)break;out.push({c,arc,p});}return out;};
             const near=(x,y)=>inkAt(x,y)||inkAt(x+2.5,y)||inkAt(x-2.5,y)||inkAt(x,y+2.5)||inkAt(x,y-2.5);
             // Under an 8-unit chain a few units of bare cloth inside the junction's V never show: up to 4 units may be bridged.
-            const clear=(p,q)=>{const d=Math.hypot(q.x-p.x,q.y-p.y),n=Math.max(2,Math.ceil(d));let off=0;for(let i=0;i<=n;i++){const t=i/n;if(!near(p.x+(q.x-p.x)*t,p.y+(q.y-p.y)*t)&&++off>4)return false;}return true;};
-            const wa=walk(A,12),wb=walk(B,18);let best=null;
+            const clear=(p,q)=>{const d=Math.hypot(q.x-p.x,q.y-p.y),n=Math.max(2,Math.ceil(d));let off=0;for(let i=0;i<=n;i++){const t=i/n;if(!near(p.x+(q.x-p.x)*t,p.y+(q.y-p.y)*t)&&++off>0)return false;}return true;};
+            const wa=walk(A,12),wb=walk(B,12);let best=null;
             for(const a of wa)for(const b of wb){const gain=a.arc+b.arc-Math.hypot(b.p.x-a.p.x,b.p.y-a.p.y);if(gain<=1)continue;if(best&&gain<=best.gain)continue;if(clear(a.p,b.p))best={a,b,gain};}
             if(best){const seg=[];const d=Math.hypot(best.b.p.x-best.a.p.x,best.b.p.y-best.a.p.y),n=Math.max(1,Math.ceil(d/1.5));for(let i=1;i<n;i++){const t=i/n;seg.push({x:best.a.p.x+(best.b.p.x-best.a.p.x)*t,y:best.a.p.y+(best.b.p.y-best.a.p.y)*t});}
               // B keeps its stroke from the meeting point on; A ends at the meeting point via the straight line.
