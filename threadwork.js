@@ -708,10 +708,11 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         if(inkAt){const pts=(E,k)=>{const n=E.l.length;return E.i===0?E.l[Math.min(n-1,k)]:E.l[Math.max(0,n-1-k)];};
           const pa=pts(A,12),pb=pts(B,12),overall=unit(pb.x-pa.x,pb.y-pa.y),local=travel(A.l,A.i);
           if(overall.x*local.x+overall.y*local.y<.5){
-            const walk=E=>{const out=[],n=E.l.length,step=E.i===0?1:-1;let arc=0,k=E.i;for(let c=1;c<n-4&&c<80;c++){k+=step;const p=E.l[k];arc+=Math.hypot(p.x-E.l[k-step].x,p.y-E.l[k-step].y);if(arc>12)break;out.push({c,arc,p});}return out;};
+            const walk=(E,max)=>{const out=[],n=E.l.length,step=E.i===0?1:-1;let arc=0,k=E.i;for(let c=1;c<n-4&&c<120;c++){k+=step;const p=E.l[k];arc+=Math.hypot(p.x-E.l[k-step].x,p.y-E.l[k-step].y);if(arc>max)break;out.push({c,arc,p});}return out;};
             const near=(x,y)=>inkAt(x,y)||inkAt(x+2.5,y)||inkAt(x-2.5,y)||inkAt(x,y+2.5)||inkAt(x,y-2.5);
-            const clear=(p,q)=>{const d=Math.hypot(q.x-p.x,q.y-p.y),n=Math.max(2,Math.ceil(d));for(let i=0;i<=n;i++){const t=i/n;if(!near(p.x+(q.x-p.x)*t,p.y+(q.y-p.y)*t))return false;}return true;};
-            const wa=walk(A),wb=walk(B);let best=null;
+            // Under an 8-unit chain a few units of bare cloth inside the junction's V never show: up to 4 units may be bridged.
+            const clear=(p,q)=>{const d=Math.hypot(q.x-p.x,q.y-p.y),n=Math.max(2,Math.ceil(d));let off=0;for(let i=0;i<=n;i++){const t=i/n;if(!near(p.x+(q.x-p.x)*t,p.y+(q.y-p.y)*t)&&++off>4)return false;}return true;};
+            const wa=walk(A,12),wb=walk(B,18);let best=null;
             for(const a of wa)for(const b of wb){const gain=a.arc+b.arc-Math.hypot(b.p.x-a.p.x,b.p.y-a.p.y);if(gain<=1)continue;if(best&&gain<=best.gain)continue;if(clear(a.p,b.p))best={a,b,gain};}
             if(best){const seg=[];const d=Math.hypot(best.b.p.x-best.a.p.x,best.b.p.y-best.a.p.y),n=Math.max(1,Math.ceil(d/1.5));for(let i=1;i<n;i++){const t=i/n;seg.push({x:best.a.p.x+(best.b.p.x-best.a.p.x)*t,y:best.a.p.y+(best.b.p.y-best.a.p.y)*t});}
               // B keeps its stroke from the meeting point on; A ends at the meeting point via the straight line.
