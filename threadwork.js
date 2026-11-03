@@ -700,7 +700,19 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // the z's start) would cross as two chains; they are pulled together to their midpoint so one runs
       // into the other, the way the hand would.
       const ends=[];for(const l of lines)if(l.length>=8)ends.push({l,i:0},{l,i:l.length-1});
-      for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++){const A=ends[a],B=ends[b];if(A.l===B.l)continue;const p=A.l[A.i],q=B.l[B.i],d=Math.hypot(p.x-q.x,p.y-q.y);if(d<.5||d>tol*2)continue;const m={x:(p.x+q.x)/2,y:(p.y+q.y)/2};A.l[A.i]={...m};B.l[B.i]={...m};}
+      for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++){const A=ends[a],B=ends[b];if(A.l===B.l)continue;const p=A.l[A.i],q=B.l[B.i],d=Math.hypot(p.x-q.x,p.y-q.y);if(d<.5||d>tol*2.2)continue;const m={x:(p.x+q.x)/2,y:(p.y+q.y)/2};A.l[A.i]={...m};B.l[B.i]={...m};}
+      // A stroke end that meets another stroke a little way from that stroke's own end (the z's top bar
+      // running on past where the diagonal leaves it, the diagonal stopping just short of the bottom bar)
+      // is a corner, not a T: the stub beyond the junction (up to 12 units) is cut and the end snapped on.
+      const arc=(l,i0,i1)=>{let t=0;for(let i=i0+1;i<=i1;i++)t+=Math.hypot(l[i].x-l[i-1].x,l[i].y-l[i-1].y);return t;};
+      for(const line of lines){if(line.length<8)continue;const others=lines.filter(l=>l!==line&&l.length>=8);if(!others.length)continue;
+        for(const side of [0,1]){const i=side?line.length-1:0,E=line[i],h=closestStrokePoint(E,others);if(h.distance>tol||!h.line||h.index<1)continue;const O=h.line,q=h.point;
+          const toStart=arc(O,0,h.index-1)+Math.hypot(q.x-O[h.index-1].x,q.y-O[h.index-1].y),toEnd=Math.hypot(O[h.index].x-q.x,O[h.index].y-q.y)+arc(O,h.index,O.length-1);
+          if(toStart>.5&&toStart<=12&&O.length-h.index>=4){O.splice(0,h.index);O.unshift({...q});}
+          else if(toEnd>.5&&toEnd<=12&&h.index>=4){O.splice(h.index);O.push({...q});}
+          line[i]={...q};
+        }
+      }
     }
     function wordCenterlines(character,metrics){
       const key=fonts[state.font].family+'|'+character;
