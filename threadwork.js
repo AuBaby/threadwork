@@ -187,8 +187,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       if(fabric.photoCanvas){const p=fabric.photoCanvas,k=Math.max(W/p.width,H/p.height)*1.04,dw=p.width*k,dh=p.height*k;clothCtx.save();clothCtx.imageSmoothingEnabled=true;clothCtx.imageSmoothingQuality="high";clothCtx.filter="blur("+Math.max(1.5,W/700).toFixed(1)+"px)";clothCtx.drawImage(p,(W-dw)/2,(H-dh)/2,dw,dh);clothCtx.restore();}
       else if(fabric.pattern){clothCtx.save();clothCtx.scale(fabric.scale,fabric.scale);clothCtx.fillStyle=fabric.pattern;clothCtx.fillRect(0,0,W/fabric.scale,H/fabric.scale);clothCtx.restore();if(!fabric.pure){clothCtx.fillStyle=color(base,0,.12);clothCtx.fillRect(0,0,W,H);}}
       else{clothCtx.save();clothCtx.translate(W/2,H/2);clothCtx.rotate(-.047);clothCtx.scale(1.12,1.12);clothCtx.fillStyle=clothCtx.createPattern(tile,'repeat');clothCtx.fillRect(-W,-H,W*2,H*2);clothCtx.restore();}
-      let g=clothCtx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#fffcdf28');g.addColorStop(.35,'#ffffff10');g.addColorStop(.72,'#1d17200b');g.addColorStop(1,'#2716221f');clothCtx.fillStyle=g;clothCtx.fillRect(0,0,W,H);
-      g=clothCtx.createRadialGradient(W*.37,H*.36,50,W*.5,H*.5,W*.7);g.addColorStop(0,'#fffae810');g.addColorStop(1,'#20182518');clothCtx.fillStyle=g;clothCtx.fillRect(0,0,W,H);
+      let g=null;if(!fabric.pure){g=clothCtx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#fffcdf28');g.addColorStop(.35,'#ffffff10');g.addColorStop(.72,'#1d17200b');g.addColorStop(1,'#2716221f');clothCtx.fillStyle=g;clothCtx.fillRect(0,0,W,H);}
+      if(!fabric.pure){g=clothCtx.createRadialGradient(W*.37,H*.36,50,W*.5,H*.5,W*.7);g.addColorStop(0,'#fffae810');g.addColorStop(1,'#20182518');clothCtx.fillStyle=g;clothCtx.fillRect(0,0,W,H);}
       // Fine irregular fibers remove the mechanically perfect tile surface.
       const r=random(8313);clothCtx.lineWidth=.42;
       for(let i=0;i<14000;i++){const x=r()*W,y=r()*H;clothCtx.strokeStyle=color(base,r()>.45?62:-48,r()*.2);clothCtx.beginPath();clothCtx.moveTo(x,y);clothCtx.lineTo(x+(r()-.4)*7,y+(r()-.5)*4);clothCtx.stroke();}
