@@ -350,12 +350,12 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       return out;
     }
     function closestStrokePoint(point,lines){
-      let best=Infinity,closest={...point};
+      let best=Infinity,closest={...point},bestLine=null,bestIndex=0;
       for(const line of lines)for(let j=1;j<line.length;j++){
         const a=line[j-1],b=line[j],dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.y-a.y)*dy)/(dx*dx+dy*dy||1))),q={x:a.x+t*dx,y:a.y+t*dy},d=(point.x-q.x)**2+(point.y-q.y)**2;
-        if(d<best){best=d;closest=q;}
+        if(d<best){best=d;closest=q;bestLine=line;bestIndex=j;}
       }
-      return{point:closest,distance:Math.sqrt(best)};
+      return{point:closest,distance:Math.sqrt(best),line:bestLine,index:bestIndex};
     }
     function penArc(line){
       const s=[0];for(let i=1;i<line.length;i++)s.push(s[i-1]+Math.hypot(line[i].x-line[i-1].x,line[i].y-line[i-1].y));
@@ -612,7 +612,14 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
           for(let k=1;k<connector.length;k++){
             const p=connector[k];if(p.x<origin-5)continue;
             const hit=closestStrokePoint(p,glyphPaths);
-            if(hit.distance<5.5){connector=connector.slice(0,k);connector.push(hit.point);break;}
+            if(hit.distance<5.5){connector=connector.slice(0,k);connector.push(hit.point);
+            // The stroke's loose head behind the meeting point would be stitched twice, doubling back
+            // into a knot (Petit's a runs on into the z's top bar); a short head is trimmed to the join.
+            const L=hit.line;if(L&&hit.index>0){const q=hit.point,arc=(i0,i1)=>{let t=0;for(let i=i0+1;i<=i1;i++)t+=Math.hypot(L[i].x-L[i-1].x,L[i].y-L[i-1].y);return t;};
+              const head=arc(0,hit.index-1)+Math.hypot(q.x-L[hit.index-1].x,q.y-L[hit.index-1].y),tail=arc(hit.index,L.length-1)+Math.hypot(L[hit.index].x-q.x,L[hit.index].y-q.y);
+              if(head>.5&&head<=15&&L.length-hit.index>=2){L.splice(0,hit.index);L.unshift({...q});}
+              else if(tail>.5&&tail<=15&&hit.index>=2){L.splice(hit.index);L.push({...q});}}
+            break;}
           }
           // Discard any initial route that merely retraces the previous
           // glyph, then begin exactly on its last contact with the join.
