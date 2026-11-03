@@ -1131,9 +1131,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // Tile size: the offset at which row 0 best matches the row after the last (and column likewise),
       // leaving a band B beyond it to crossfade across, so the wrap never shows a hard seam.
       const B=Math.round(w*.04),at=(x,y)=>(y*w+x)*4,seam=(size,axis)=>{let best=size-B,bv=Infinity;for(let n=size-B-90;n<=size-B;n++){let sum=0;const len=axis?w:h;for(let i=0;i<len;i+=2){const a=axis?at(i,0):at(0,i),b=axis?at(i,n):at(n,i);sum+=Math.abs(px[a]-px[b])+Math.abs(px[a+1]-px[b+1])+Math.abs(px[a+2]-px[b+2]);}if(sum<bv){bv=sum;best=n;}}return best;};
-      const cw=seam(w,0),ch=seam(h,1),one=document.createElement('canvas');one.width=cw;one.height=ch;const og=one.getContext('2d');og.drawImage(c,0,0);
-      for(let i=0;i<B;i++){og.globalAlpha=1-i/B;og.drawImage(c,cw+i,0,1,ch,i,0,1,ch);}
-      for(let j=0;j<B;j++){og.globalAlpha=1-j/B;og.drawImage(c,0,ch+j,cw,1,0,j,cw,1);}
+      // A `pure` tile is supplied seamless at its full size, so it is used whole: no seam search, no crossfade.
+      const cw=f.pure?w:seam(w,0),ch=f.pure?h:seam(h,1),one=document.createElement('canvas');one.width=cw;one.height=ch;const og=one.getContext('2d');og.drawImage(c,0,0);
+      if(!f.pure){for(let i=0;i<B;i++){og.globalAlpha=1-i/B;og.drawImage(c,cw+i,0,1,ch,i,0,1,ch);}
+      for(let j=0;j<B;j++){og.globalAlpha=1-j/B;og.drawImage(c,0,ch+j,cw,1,0,j,cw,1);}}
       og.globalAlpha=1;
       // Softened slightly, so the knit sits behind the thread instead of competing with it.
       // The blur runs over a 3x3 repeat and keeps the middle tile, so the tile edges blur into their neighbours rather than into nothing.
