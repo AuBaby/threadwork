@@ -164,38 +164,18 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     function drawCloth(){
       const fabric=fabrics[state.fabric];
       const base=fabric.hex;
-      const tile=document.createElement('canvas');tile.width=216;tile.height=216;
-      const t=tile.getContext('2d');t.fillStyle=color(base,-4);t.fillRect(0,0,216,216);t.lineCap='round';
-        // Seed stitch, as the photographed blankets show it: every stitch is a short
-        // horizontal bar, wider than tall, lit along its top with a dark slot beneath,
-        // laid in a brick pattern so the surface reads as a diagonal lattice. Jitter is
-        // keyed to the wrapped cell so the tile repeats without a seam.
-        const nx=22,ny=36,px=216/nx,py=216/ny;t.fillStyle=color(base,-32);t.fillRect(0,0,216,216);
-        for(let row=-1;row<=ny;row++)for(let col=-1;col<=nx;col++){
-          const r=random(((row+ny)%ny)*97+((col+nx)%nx)*13+5);
-          // Bars lean alternately, which is what makes the surface read as a diagonal lattice.
-          const cx=col*px+(row%2?px/2:0)+px/2+(r()-.5)*2,cy=row*py+py/2+(r()-.5)*1.2,shade=(r()-.5)*22,tilt=((col+row)%2?.3:-.3)+(r()-.5)*.2,w=px*(.42+r()*.12);
-          // The slot under the bar.
-          t.fillStyle=color(base,-60,.7);t.beginPath();t.ellipse(cx+.6,cy+py*.5,px*.42,py*.3,tilt,0,Math.PI*2);t.fill();
-          // A soft halo first, so the bar has a hairy edge rather than a hard one.
-          t.fillStyle=color(base,shade+10,.3);t.beginPath();t.ellipse(cx,cy,w*1.3,py*.6,tilt,0,Math.PI*2);t.fill();
-          // The bar itself, bright on top and shaded underneath.
-          const g=t.createLinearGradient(0,cy-py*.45,0,cy+py*.45);
-          g.addColorStop(0,color(base,shade+48));g.addColorStop(.35,color(base,shade+14));g.addColorStop(.7,color(base,shade-8));g.addColorStop(1,color(base,shade-34));
-          t.fillStyle=g;t.beginPath();t.ellipse(cx,cy,w,py*.44,tilt,0,Math.PI*2);t.fill();
-          // Fuzz: stray fibres lying along the bar and catching the light.
-          for(let f=0;f<7;f++){t.strokeStyle=color(base,f<4?52:-30,.12+r()*.16);t.lineWidth=.3+r()*.2;t.beginPath();const x0=cx-w*.9+r()*w*1.8,y0=cy-py*.5+r()*py,ang=tilt+(r()-.5)*1.4,len=3+r()*6;t.moveTo(x0,y0);t.lineTo(x0+Math.cos(ang)*len,y0+Math.sin(ang)*len);t.stroke();}
-        }
+      // No procedural stand-in: a blanket shows its real tile or, until that has loaded (or if it failed), a plain
+      // flat of its colour. Nothing else is ever drawn under the thread.
       clothCtx.fillStyle=base;clothCtx.fillRect(0,0,W,H);
       if(fabric.photoCanvas){const p=fabric.photoCanvas,k=Math.max(W/p.width,H/p.height)*1.04,dw=p.width*k,dh=p.height*k;clothCtx.save();clothCtx.imageSmoothingEnabled=true;clothCtx.imageSmoothingQuality="high";clothCtx.filter="blur("+Math.max(1.5,W/700).toFixed(1)+"px)";clothCtx.drawImage(p,(W-dw)/2,(H-dh)/2,dw,dh);clothCtx.restore();}
       else if(fabric.pattern&&fabric.lane){const box=letterBox(),s=Math.max(.5,Math.min(2.5,box.h*2.3/fabric.lane.pitch)),target=box.y-box.h*.2,ty=target-fabric.lane.centre*s;clothCtx.save();clothCtx.imageSmoothingQuality='high';clothCtx.translate(0,ty);clothCtx.scale(s,s);clothCtx.fillStyle=fabric.pattern;clothCtx.fillRect(0,-ty/s-fabric.lane.pitch,W/s,H/s+fabric.lane.pitch*2);clothCtx.restore();}
       else if(fabric.pattern){clothCtx.save();clothCtx.scale(fabric.scale,fabric.scale);clothCtx.fillStyle=fabric.pattern;clothCtx.fillRect(0,0,W/fabric.scale,H/fabric.scale);clothCtx.restore();if(!fabric.pure&&fabric.wash!==false){clothCtx.fillStyle=color(base,0,.12);clothCtx.fillRect(0,0,W,H);}}
-      else{clothCtx.save();clothCtx.translate(W/2,H/2);clothCtx.rotate(-.047);clothCtx.scale(1.12,1.12);clothCtx.fillStyle=clothCtx.createPattern(tile,'repeat');clothCtx.fillRect(-W,-H,W*2,H*2);clothCtx.restore();}
+      
       let g=null;if(!fabric.pure){g=clothCtx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#fffcdf28');g.addColorStop(.35,'#ffffff10');g.addColorStop(.72,'#1d17200b');g.addColorStop(1,'#2716221f');clothCtx.fillStyle=g;clothCtx.fillRect(0,0,W,H);}
       if(!fabric.pure){g=clothCtx.createRadialGradient(W*.37,H*.36,50,W*.5,H*.5,W*.7);g.addColorStop(0,'#fffae810');g.addColorStop(1,'#20182518');clothCtx.fillStyle=g;clothCtx.fillRect(0,0,W,H);}
       // Fine irregular fibers remove the mechanically perfect tile surface.
       const r=random(8313);clothCtx.lineWidth=.42;
-      for(let i=0;i<14000;i++){const x=r()*W,y=r()*H;clothCtx.strokeStyle=color(base,r()>.45?62:-48,r()*.2);clothCtx.beginPath();clothCtx.moveTo(x,y);clothCtx.lineTo(x+(r()-.4)*7,y+(r()-.5)*4);clothCtx.stroke();}
+      if(!fabric.pure)for(let i=0;i<14000;i++){const x=r()*W,y=r()*H;clothCtx.strokeStyle=color(base,r()>.45?62:-48,r()*.2);clothCtx.beginPath();clothCtx.moveTo(x,y);clothCtx.lineTo(x+(r()-.4)*7,y+(r()-.5)*4);clothCtx.stroke();}
     }
     // Single-stroke masters traced through the actual Pacifico glyphs at
     // 180 px. Explicit pen paths resolve overlapping brush strokes that a
@@ -1169,6 +1149,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     }
     function saveEmbroidery(){
       if(!ready)return;const n=letters(state.text);if(!n){toast('Type a name first.');return;}
+      // The card's thumbnail must show the real tile: if this fabric's texture is still on its way, wait for it.
+      const tf=fabrics[state.fabric];if(tf.texture&&!tf.pattern&&!tf.photoCanvas){ensureTexture(tf).then(()=>{drawCloth();saveEmbroidery();});return;}
       clearTimeout(debounce);cancelAnimationFrame(raf);makeGeometry();renderArtwork();
       saved={text:state.text.trim(),font:state.font,thread:state.thread,fabric:state.fabric,n,thumb:thumbJpeg()};
       saving=true;closeModal();saving=false;renderSummary();announce('saved',{letters:n});
