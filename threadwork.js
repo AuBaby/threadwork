@@ -689,7 +689,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // the z's start) would cross as two chains; they are pulled together to their midpoint so one runs
       // into the other, the way the hand would.
       const ends=[];for(const l of lines)if(l.length>=8)ends.push({l,i:0},{l,i:l.length-1});
-      for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++){const A=ends[a],B=ends[b];if(A.l===B.l)continue;const p=A.l[A.i],q=B.l[B.i],d=Math.hypot(p.x-q.x,p.y-q.y);if(d<.5||d>tol*2.2)continue;const m={x:(p.x+q.x)/2,y:(p.y+q.y)/2};A.l[A.i]={...m};B.l[B.i]={...m};
+      for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++){const A=ends[a],B=ends[b];if(A.l===B.l)continue;const p=A.l[A.i],q=B.l[B.i],d=Math.hypot(p.x-q.x,p.y-q.y);if(d>tol*2.2)continue;
+        // Ends that already coincide (a real junction from whole-word thinning) still get the hairpin and detour
+        // treatment below; only the pull-together is skipped for them.
+        const m={x:(p.x+q.x)/2,y:(p.y+q.y)/2};if(d>=.5){A.l[A.i]={...m};B.l[B.i]={...m};}
         // A hairpin at the merged junction (Petit's x leaves the a's tail backwards for a few units before
         // curving on) reads as a knot: the short nub that doubles back (≤10 units) is cut so the chain runs on.
         const unit=(x,y)=>{const l=Math.hypot(x,y)||1;return{x:x/l,y:y/l};};
