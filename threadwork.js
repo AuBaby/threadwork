@@ -1135,7 +1135,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // Softened slightly, so the knit sits behind the thread instead of competing with it.
       // The blur runs over a 3x3 repeat and keeps the middle tile, so the tile edges blur into their neighbours rather than into nothing.
       const small=document.createElement('canvas');small.width=cw*2.4;small.height=ch*2.4;const sg=small.getContext('2d');sg.scale(.8,.8);sg.fillStyle=sg.createPattern(one,'repeat');sg.fillRect(0,0,cw*3,ch*3);
-      const m=document.createElement('canvas');m.width=cw;m.height=ch;m.getContext('2d').drawImage(small,cw*.8,ch*.8,cw*.8,ch*.8,0,0,cw,ch);
+      const m=document.createElement('canvas');m.width=cw;m.height=ch;if(f.pure)m.getContext('2d').drawImage(one,0,0);else m.getContext('2d').drawImage(small,cw*.8,ch*.8,cw*.8,ch*.8,0,0,cw,ch);
       // A marled yarn (`marl`) mottles the tile at the stitch scale: a soft blotch across a stitch and a
       // half, a per-stitch flicker and half-stitch streaks, all periodic in the tile so the repeat stays seamless.
       if(f.marl){const mg=m.getContext('2d'),md=mg.getImageData(0,0,cw,ch),mp=md.data,r=random(4242);
@@ -1143,7 +1143,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         const coarse=grid(Math.round(cw/45),Math.round(ch/45)),fine=grid(Math.round(cw/22),Math.round(ch/22)),streak=grid(Math.round(cw/11),Math.round(ch/11));
         for(let y=0;y<ch;y++)for(let x=0;x<cw;x++){const i=(y*cw+x)*4,k=1+f.marl*((coarse(x,y)-.5)*.6+(fine(x,y)-.5)+(streak(x,y)-.5)*.7);mp[i]=Math.min(255,mp[i]*k);mp[i+1]=Math.min(255,mp[i+1]*k);mp[i+2]=Math.min(255,mp[i+2]*k);}
         mg.putImageData(md,0,0);}
-      f.pattern=clothCtx.createPattern(m,'repeat');ok();};img.onerror=fail;img.src=/^data:/.test(f.texture)?f.texture:f.texture+(f.texture.includes('?')?'&':'?')+'v='+TEXTURE_VERSION;});
+      f.tileCanvas=m;f.pattern=clothCtx.createPattern(m,'repeat');ok();};img.onerror=fail;img.src=/^data:/.test(f.texture)?f.texture:f.texture+(f.texture.includes('?')?'&':'?')+'v='+TEXTURE_VERSION;});
     const ensureTexture=f=>f&&f.texture&&!f.pattern?loadTexture(f).catch(e=>{console.warn('Threadwork: texture failed, using plain stitches',f.name,e);f.texture=null;}):Promise.resolve();
     async function init(){
       for(const f of fonts)if(f.kit&&!f.pending){const l=document.createElement('link');l.rel='stylesheet';l.href=f.kit;document.head.append(l);}
@@ -1151,7 +1151,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       catch(error){$('loading').textContent='The lettering could not load. Refresh to try again.';console.error(error);if(embed.mode==='product'&&summaryHost()&&summaryHost().querySelector('.tw-card--loading'))renderSummary();}
     }
     init();
-window.Threadwork={mode:embed.mode,product:embed.product,flow:typeof FLOW==='undefined'?'':FLOW,root:SHADOW,open:openModal,close:closeModal,debug:()=>({monogram,paths,strokeWidth,state,fonts,connectStrokes,closestStrokePoint,makeFontField,applyFont,wordCenterlines})};
+window.Threadwork={mode:embed.mode,product:embed.product,flow:typeof FLOW==='undefined'?'':FLOW,root:SHADOW,open:openModal,close:closeModal,debug:()=>({monogram,paths,strokeWidth,state,fonts,fabrics,ensureTexture,connectStrokes,closestStrokePoint,makeFontField,applyFont,wordCenterlines})};
 };
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
