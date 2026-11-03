@@ -632,7 +632,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       }
       // Corner cutting is sampled relative to the stroke, so a tight turn in
       // a fine monoline face is rounded no more than one in a brush face.
-      paths=joinPenPaths(paths);if(!connected())trimOverlaps(paths,4.5);if(fonts[state.font].extendEnds)extendEnds(paths,field);paths=centerPenPaths(paths,field);paths.push(...bareInkPaths(paths,field));paths=smoothPenPaths(paths,Math.max(3,Math.min(10,strokeWidth*.42)));
+      paths=joinPenPaths(paths);if(!connected())trimOverlaps(paths,4.5,field);if(fonts[state.font].extendEnds)extendEnds(paths,field);paths=centerPenPaths(paths,field);paths.push(...bareInkPaths(paths,field));paths=smoothPenPaths(paths,Math.max(3,Math.min(10,strokeWidth*.42)));
       let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;for(const line of paths)for(const p of line){x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y);}
       // Optical centring: a heavy capital at one end and a thin flick at the other make a box-centred
       // word look shifted, so the centre is taken halfway between the box centre and the ink centroid.
@@ -684,7 +684,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // into the next (Petit's a-tail into the z's top bar) both ends are stitched along the same ink and the
     // chain doubles back into a knot. A stroke end that runs along another stroke is cut back (at most 15
     // units) to where they first meet, and snapped onto the other stroke so the two touch exactly once.
-    function trimOverlaps(lines,tol){
+    function trimOverlaps(lines,tol,field){
+      const inkAt=field?(x,y)=>{const ix=Math.round(x+field.ox),iy=Math.round(y+field.oy);return ix>=0&&ix<field.w&&iy>=0&&iy<field.h&&field.ink[iy*field.w+ix]===1;}:null;
       for(const line of lines){if(line.length<8)continue;const others=lines.filter(l=>l!==line);if(!others.length)continue;
         for(const side of [0,1]){const idx=i=>side?line.length-1-i:i;let cut=0,len=0,hit=null;
           for(let i=0;i<line.length-4;i++){const p=line[idx(i)],h=closestStrokePoint(p,others);if(h.distance>tol)break;if(i>0)len+=Math.hypot(p.x-line[idx(i-1)].x,p.y-line[idx(i-1)].y);if(len>15)break;cut=i;hit=h;}
@@ -705,7 +706,22 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         const vA=travel(A.l,A.i),vB=travel(B.l,B.i);
         if(vA.x*vB.x+vA.y*vB.y>-.35){const cB=nubCut(B.l,B.i,vA),cA=nubCut(A.l,A.i,{x:-vB.x,y:-vB.y});
           const cut=(E,c)=>{if(E.i===0){E.l.splice(0,c);E.l.unshift({...m});}else{E.l.splice(E.l.length-c);E.l.push({...m});E.i=E.l.length-1;}};
-          if(cB!==null&&(cA===null||cB<=cA))cut(B,cB);else if(cA!==null)cut(A,cA);}}
+          if(cB!==null&&(cA===null||cB<=cA))cut(B,cB);else if(cA!==null)cut(A,cA);}
+        // A detour at the junction (the a's tail curls into the x's pen-start nub before the x climbs): where
+        // the chain's local direction at the join swings more than ~60° away from where the two strokes are
+        // actually heading, it takes the shortest line between them that stays inside the ink (≤12 units a side).
+        if(inkAt){const pts=(E,k)=>{const n=E.l.length;return E.i===0?E.l[Math.min(n-1,k)]:E.l[Math.max(0,n-1-k)];};
+          const pa=pts(A,12),pb=pts(B,12),overall=unit(pb.x-pa.x,pb.y-pa.y),local=travel(A.l,A.i);
+          if(overall.x*local.x+overall.y*local.y<.5){
+            const walk=E=>{const out=[],n=E.l.length,step=E.i===0?1:-1;let arc=0,k=E.i;for(let c=1;c<n-4&&c<80;c++){k+=step;const p=E.l[k];arc+=Math.hypot(p.x-E.l[k-step].x,p.y-E.l[k-step].y);if(arc>12)break;out.push({c,arc,p});}return out;};
+            const clear=(p,q)=>{const d=Math.hypot(q.x-p.x,q.y-p.y),n=Math.max(2,Math.ceil(d));for(let i=0;i<=n;i++){const t=i/n;if(!inkAt(p.x+(q.x-p.x)*t,p.y+(q.y-p.y)*t))return false;}return true;};
+            const wa=walk(A),wb=walk(B);let best=null;
+            for(const a of wa)for(const b of wb){const gain=a.arc+b.arc-Math.hypot(b.p.x-a.p.x,b.p.y-a.p.y);if(gain<=1)continue;if(best&&gain<=best.gain)continue;if(clear(a.p,b.p))best={a,b,gain};}
+            if(best){const seg=[];const d=Math.hypot(best.b.p.x-best.a.p.x,best.b.p.y-best.a.p.y),n=Math.max(1,Math.ceil(d/1.5));for(let i=1;i<n;i++){const t=i/n;seg.push({x:best.a.p.x+(best.b.p.x-best.a.p.x)*t,y:best.a.p.y+(best.b.p.y-best.a.p.y)*t});}
+              // B keeps its stroke from the meeting point on; A ends at the meeting point via the straight line.
+              if(B.i===0){B.l.splice(0,best.b.c);}else{B.l.splice(B.l.length-best.b.c);B.i=B.l.length-1;}
+              const bp={...(B.i===0?B.l[0]:B.l[B.l.length-1])};
+              if(A.i===0){A.l.splice(0,best.a.c);A.l.unshift(...seg.slice().reverse(),bp);}else{A.l.splice(A.l.length-best.a.c);A.l.push(...seg,bp);A.i=A.l.length-1;}}}}}
       // A stroke end that meets another stroke a little way from that stroke's own end (the z's top bar
       // running on past where the diagonal leaves it, the diagonal stopping just short of the bottom bar)
       // is a corner, not a T: the stub beyond the junction (up to 12 units) is cut and the end snapped on.
