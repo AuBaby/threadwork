@@ -61,10 +61,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // Popcorn (baby + adult). Moon Stone has no photo yet and falls back to the Sawa knit by name.
       { name:'Pink Quartz', hex:'#e9a8b2', texture:ASSETS+'fabrics/popcorn-pink-quartz.webp', lift:0, pure:true, scale:.55, line:'popcorn' }, { name:'Henna', hex:'#c69778', texture:ASSETS+'fabrics/popcorn-henna.webp', lift:0, pure:true, scale:.55, line:'popcorn' },
       { name:'Sky Blue', hex:'#90a2bb', texture:ASSETS+'fabrics/popcorn-sky-blue.webp', lift:0, pure:true, scale:.55, line:'popcorn' }, { name:'Citron', hex:'#e7df96', texture:ASSETS+'fabrics/popcorn-citron.webp', lift:0, pure:true, scale:.55, line:'popcorn' },
-      { name:'Cream', hex:'#d1c7b2', texture:ASSETS+'fabrics/popcorn-cream.webp', lift:0, pure:true, scale:.55, line:'popcorn' }, { name:'Moon Stone', hex:'#aba8a7', aka:['Moonstone'], texture:ASSETS+'fabrics/popcorn-knit.webp', neutral:true, lift:-.35, marl:.2, scale:.45, line:'popcorn' },
+      { name:'Cream', hex:'#cec7b5', texture:ASSETS+'fabrics/popcorn-cream.webp', lift:0, pure:true, scale:.55, line:'popcorn' }, { name:'Moon Stone', hex:'#aba8a7', aka:['Moonstone'], texture:ASSETS+'fabrics/popcorn-knit.webp', neutral:true, lift:-.35, marl:.2, scale:.45, line:'popcorn' },
       // Little Love cashmere + the Cashmere Cloud gift sets (same knit). 'Peony Pink' is the gift set's name for Peony.
       { name:'Butter Cream', hex:'#b7a698', image:ASSETS+'fabrics/cashmere-butter-cream.jpg', texture:ASSETS+'fabrics/cashmere-butter-cream.jpg', photo:true, scale:.5, line:'cashmere' }, { name:'Cloud', hex:'#c6beb2', image:ASSETS+'fabrics/cashmere-cloud.jpg', texture:ASSETS+'fabrics/cashmere-cloud.jpg', photo:true, scale:.5, line:'cashmere' },
-      { name:'Hydrangea', hex:'#b2c0ca', image:ASSETS+'fabrics/cashmere-hydrangea.jpg', texture:ASSETS+'fabrics/cashmere-hydrangea.jpg', photo:true, scale:.5, line:'cashmere' }, { name:'Lavande', hex:'#d7bada', image:ASSETS+'fabrics/cashmere-lavande.jpg', texture:ASSETS+'fabrics/cashmere-lavande.jpg', photo:true, scale:.5, line:'cashmere' },
+      { name:'Hydrangea', hex:'#b2c0ca', image:ASSETS+'fabrics/cashmere-hydrangea.jpg', texture:ASSETS+'fabrics/cashmere-hydrangea.jpg', photo:true, scale:.5, line:'cashmere' }, { name:'Lavande', hex:'#d5b9d9', texture:ASSETS+'fabrics/littlelove-lavande.webp', pure:true, lift:0, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' },
       { name:'Peony', aka:['Peony Pink'], hex:'#d7b5b0', image:ASSETS+'fabrics/cashmere-peony.webp', texture:ASSETS+'fabrics/cashmere-peony.webp', photo:true, scale:.5, line:'cashmere' },
       // Kid + Adult beanies (rib photos, placeholder).
       { name:'Charcoal', hex:'#4b4b54', image:ASSETS+'fabrics/beanie-charcoal.webp', texture:ASSETS+'fabrics/beanie-charcoal.webp', photo:true, crop:[0,.22,1,.56], scale:.3, line:'beanie' }, { name:'Chocolate', hex:'#552b20', image:ASSETS+'fabrics/beanie-chocolate.webp', texture:ASSETS+'fabrics/beanie-chocolate.webp', photo:true, crop:[0,.22,1,.56], scale:.3, line:'beanie' },
@@ -94,7 +94,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Centreline to centreline, since the chain has its own width (d, 2026-11-01: ink-to-ink left Pacifico
     // a little far apart and Petit's T and P touching).
     // Bump when any knit tile changes: the file name stays, the cache key does not.
-    const TEXTURE_VERSION='4';
+    const TEXTURE_VERSION='5';
     const INITIALS_GAP = 32;
     // The chain's own width in font units (measured on the canvas at the default weight) and the gap the
     // stitched strokes should keep in two dimensions: a hairline face needs more ink clearance than a fat one.
@@ -185,6 +185,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         }
       clothCtx.fillStyle=base;clothCtx.fillRect(0,0,W,H);
       if(fabric.photoCanvas){const p=fabric.photoCanvas,k=Math.max(W/p.width,H/p.height)*1.04,dw=p.width*k,dh=p.height*k;clothCtx.save();clothCtx.imageSmoothingEnabled=true;clothCtx.imageSmoothingQuality="high";clothCtx.filter="blur("+Math.max(1.5,W/700).toFixed(1)+"px)";clothCtx.drawImage(p,(W-dw)/2,(H-dh)/2,dw,dh);clothCtx.restore();}
+      else if(fabric.pattern&&fabric.lane){const box=letterBox(),s=Math.max(.5,Math.min(2,box.h*1.5/fabric.lane.pitch)),target=box.y-box.h*.05,ty=target-fabric.lane.centre*s;clothCtx.save();clothCtx.translate(0,ty);clothCtx.scale(s,s);clothCtx.fillStyle=fabric.pattern;clothCtx.fillRect(0,-ty/s-fabric.lane.pitch,W/s,H/s+fabric.lane.pitch*2);clothCtx.restore();}
       else if(fabric.pattern){clothCtx.save();clothCtx.scale(fabric.scale,fabric.scale);clothCtx.fillStyle=fabric.pattern;clothCtx.fillRect(0,0,W/fabric.scale,H/fabric.scale);clothCtx.restore();if(!fabric.pure){clothCtx.fillStyle=color(base,0,.12);clothCtx.fillRect(0,0,W,H);}}
       else{clothCtx.save();clothCtx.translate(W/2,H/2);clothCtx.rotate(-.047);clothCtx.scale(1.12,1.12);clothCtx.fillStyle=clothCtx.createPattern(tile,'repeat');clothCtx.fillRect(-W,-H,W*2,H*2);clothCtx.restore();}
       let g=null;if(!fabric.pure){g=clothCtx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#fffcdf28');g.addColorStop(.35,'#ffffff10');g.addColorStop(.72,'#1d17200b');g.addColorStop(1,'#2716221f');clothCtx.fillStyle=g;clothCtx.fillRect(0,0,W,H);}
@@ -954,7 +955,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     });
     // Resetting the width wipes the bitmap outright; Safari can leave stale
     // patches of a shadowed canvas behind after a plain clearRect.
-    function renderArtwork(){artwork.width=W;art.drawImage(cloth,0,0);if(state.guide)drawFontGuide();drawEmbroidery();drawView();}
+    // Lane fabrics (Little Love hearts) scale the knit with the lettering and sit the name inside a lane.
+    function letterBox(){const y=letterY();if(!geometry)return{y,h:180*.75};const s=Math.min(980/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);return{y,h:Math.max(60,geometry.height*s)};}
+    function renderArtwork(){if(fabrics[state.fabric].lane)drawCloth();artwork.width=W;art.drawImage(cloth,0,0);if(state.guide)drawFontGuide();drawEmbroidery();drawView();}
     function requestRender(){if(!ready)return;cancelAnimationFrame(raf);raf=requestAnimationFrame(renderArtwork);}
     // Reading a pixel back makes Safari finish the artwork before it is
     // copied; otherwise it can composite from a stale copy of the canvas.
