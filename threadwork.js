@@ -700,7 +700,16 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // the z's start) would cross as two chains; they are pulled together to their midpoint so one runs
       // into the other, the way the hand would.
       const ends=[];for(const l of lines)if(l.length>=8)ends.push({l,i:0},{l,i:l.length-1});
-      for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++){const A=ends[a],B=ends[b];if(A.l===B.l)continue;const p=A.l[A.i],q=B.l[B.i],d=Math.hypot(p.x-q.x,p.y-q.y);if(d<.5||d>tol*2.2)continue;const m={x:(p.x+q.x)/2,y:(p.y+q.y)/2};A.l[A.i]={...m};B.l[B.i]={...m};}
+      for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++){const A=ends[a],B=ends[b];if(A.l===B.l)continue;const p=A.l[A.i],q=B.l[B.i],d=Math.hypot(p.x-q.x,p.y-q.y);if(d<.5||d>tol*2.2)continue;const m={x:(p.x+q.x)/2,y:(p.y+q.y)/2};A.l[A.i]={...m};B.l[B.i]={...m};
+        // A hairpin at the merged junction (Petit's x leaves the a's tail backwards for a few units before
+        // curving on) reads as a knot: the short nub that doubles back (≤10 units) is cut so the chain runs on.
+        const unit=(x,y)=>{const l=Math.hypot(x,y)||1;return{x:x/l,y:y/l};};
+        const travel=(L,i)=>{const n=L.length,j=i===0?Math.min(6,n-1):Math.max(n-7,0);return unit(L[i].x-L[j].x,L[i].y-L[j].y);};
+        const nubCut=(L,i,v)=>{const n=L.length,step=i===0?1:-1;let arc=0,prev=L[i],k=i;for(let c=1;c<n-4&&c<60;c++){k+=step;const pt=L[k];arc+=Math.hypot(pt.x-prev.x,pt.y-prev.y);prev=pt;if(arc>10)return null;const w=unit(pt.x-m.x,pt.y-m.y);if(w.x*v.x+w.y*v.y>.35)return c;}return null;};
+        const vA=travel(A.l,A.i),vB=travel(B.l,B.i);
+        if(vA.x*vB.x+vA.y*vB.y>-.35){const cB=nubCut(B.l,B.i,vA),cA=nubCut(A.l,A.i,{x:-vB.x,y:-vB.y});
+          const cut=(E,c)=>{if(E.i===0){E.l.splice(0,c);E.l.unshift({...m});}else{E.l.splice(E.l.length-c);E.l.push({...m});E.i=E.l.length-1;}};
+          if(cB!==null&&(cA===null||cB<=cA))cut(B,cB);else if(cA!==null)cut(A,cA);}}
       // A stroke end that meets another stroke a little way from that stroke's own end (the z's top bar
       // running on past where the diagonal leaves it, the diagonal stopping just short of the bottom bar)
       // is a corner, not a T: the stub beyond the junction (up to 12 units) is cut and the end snapped on.
