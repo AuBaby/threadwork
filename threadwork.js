@@ -68,7 +68,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       { name:'Hydrangea', hex:'#aebcc7', texture:ASSETS+'fabrics/littlelove-hydrangea.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' }, { name:'Lavande', hex:'#d5b9d9', texture:ASSETS+'fabrics/littlelove-lavande.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' },
       { name:'Peony', aka:['Peony Pink'], hex:'#d1b6b2', texture:ASSETS+'fabrics/littlelove-peony.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' },
       // Kid + Adult beanies (rib photos, placeholder).
-      { name:'Charcoal', hex:'#2c2b31', image:ASSETS+'fabrics/beanie-charcoal.webp', texture:ASSETS+'fabrics/beanie-charcoal-knit.webp', whole:true, wash:false, lift:.05, marl:.28, fleck:{density:.0032,len:16,width:2,gain:65}, scale:.5, line:'beanie' }, { name:'Chocolate', hex:'#53271a', image:ASSETS+'fabrics/beanie-chocolate.webp', texture:ASSETS+'fabrics/beanie-chocolate-knit.webp', whole:true, wash:false, lift:.1, scale:.5, line:'beanie' },
+            { name:'Charcoal', hex:'#29282e', image:ASSETS+'fabrics/beanie-charcoal.webp', texture:ASSETS+'fabrics/beanie-charcoal-knit.webp', whole:true, wash:false, lift:.05, marl:.34, fleck:{density:.008,len:18,width:4,gain:50,lean:4,soft:2,rib:1.3}, scale:.5, line:'beanie' },
       { name:'Cobalt', hex:'#172b9a', image:ASSETS+'fabrics/beanie-cobalt.webp', texture:ASSETS+'fabrics/beanie-cobalt-knit.webp', whole:true, wash:false, lift:.1, scale:.5, line:'beanie' }, { name:'Lavande', hex:'#b9a2cf', image:ASSETS+'fabrics/beanie-lavande.webp', texture:ASSETS+'fabrics/beanie-lavande-knit.webp', whole:true, scale:.5, line:'beanie' },
       { name:'Pink Haze', hex:'#ce8085', image:ASSETS+'fabrics/beanie-pink-haze.webp', texture:ASSETS+'fabrics/beanie-pink-haze-knit.webp', whole:true, marl:.1, scale:.5, line:'beanie' }
     ];
@@ -1266,10 +1266,20 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         mg.putImageData(md,0,0);}
       // A heathered yarn (`fleck`) carries pale fibres: light dashes along the rib, `width` pixels wide and up to
       // `len` long, scattered at `density` per pixel, `gain` brighter. Positions wrap inside the tile, so the repeat stays seamless.
-      if(f.fleck){const mg=m.getContext('2d'),md=mg.getImageData(0,0,cw,ch),mp=md.data,r=random(777),count=Math.round(cw*ch*f.fleck.density),wd=f.fleck.width||1;
-        for(let s=0;s<count;s++){const x0=Math.floor(r()*cw),y0=Math.floor(r()*ch),len=1+Math.floor(r()*f.fleck.len),g=f.fleck.gain*(.5+r());
+      if(f.fleck){const fl=f.fleck,mg=m.getContext('2d'),r=random(777),count=Math.round(cw*ch*fl.density),wd=fl.width||1;
+        if(fl.soft){
+          // Heathered yarn: pale fibre strands (width wd, up to len long, leaning up to `lean` px sideways) painted
+          // on a black layer, softened by resampling it down `soft` times and back up, then added to the tile. Each
+          // strand is drawn again a tile to the left/above so the repeat stays seamless.
+          const lay=document.createElement('canvas');lay.width=cw;lay.height=ch;const lg=lay.getContext('2d');lg.fillStyle='#000';lg.fillRect(0,0,cw,ch);lg.lineCap='round';
+          for(let s=0;s<count;s++){const x0=r()*cw,y0=r()*ch,len=2+r()*fl.len,g=Math.round(fl.gain*(.35+r()*.65)),dx=(r()-.5)*(fl.lean||0);lg.strokeStyle='rgb('+g+','+g+','+g+')';lg.lineWidth=wd*(.6+r()*.8);
+            for(const o of [[0,0],[-cw,0],[0,-ch],[-cw,-ch]]){lg.beginPath();lg.moveTo(x0+o[0],y0+o[1]);lg.lineTo(x0+o[0]+dx,y0+o[1]+len);lg.stroke();}}
+          const k=fl.soft,sm=document.createElement('canvas');sm.width=Math.max(1,Math.round(cw/k));sm.height=Math.max(1,Math.round(ch/k));sm.getContext('2d').drawImage(lay,0,0,sm.width,sm.height);
+          if(fl.rib){lay.getContext('2d').drawImage(sm,0,0,cw,ch);const md=mg.getImageData(0,0,cw,ch),mp=md.data,ld=lay.getContext('2d').getImageData(0,0,cw,ch).data;let sum=0;for(let i=0;i<mp.length;i+=4)sum+=mp[i]+mp[i+1]+mp[i+2];const mean=sum/(mp.length/4)/3||1;for(let i=0;i<mp.length;i+=4){const lum=(mp[i]+mp[i+1]+mp[i+2])/3,k=Math.pow(lum/mean,fl.rib),g=ld[i]*k;mp[i]=Math.min(255,mp[i]+g);mp[i+1]=Math.min(255,mp[i+1]+g);mp[i+2]=Math.min(255,mp[i+2]+g);}mg.putImageData(md,0,0);}else{mg.globalCompositeOperation='lighter';mg.drawImage(sm,0,0,cw,ch);mg.globalCompositeOperation='source-over';}lay.width=sm.width=0;
+        }else{const md=mg.getImageData(0,0,cw,ch),mp=md.data;
+        for(let s=0;s<count;s++){const x0=Math.floor(r()*cw),y0=Math.floor(r()*ch),len=1+Math.floor(r()*fl.len),g=fl.gain*(.5+r());
           for(let t=0;t<len;t++)for(let dx=0;dx<wd;dx++){const i=(((y0+t)%ch)*cw+(x0+dx)%cw)*4;mp[i]=Math.min(255,mp[i]+g);mp[i+1]=Math.min(255,mp[i+1]+g);mp[i+2]=Math.min(255,mp[i+2]+g);}}
-        mg.putImageData(md,0,0);}
+        mg.putImageData(md,0,0);}}
       f.tileCanvas=m;f.pattern=clothCtx.createPattern(m,'repeat');c.width=one.width=0;if(small)small.width=0;ok();}catch(e){fail(e);}};img.onerror=fail;img.src=/^data:/.test(f.texture)?f.texture:f.texture+(f.texture.includes('?')?'&':'?')+'v='+TEXTURE_VERSION;});
     // A tile that never settles (a throw inside decode, a stalled download) must not hold the studio: after 15s the
     // fabric falls back to plain stitches and the cart keeps working.
