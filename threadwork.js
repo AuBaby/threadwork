@@ -743,7 +743,13 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // Two stroke ends that stop within a stroke width of each other inside shared ink (the a's tail and
       // the z's start) would cross as two chains; they are pulled together to their midpoint so one runs
       // into the other, the way the hand would.
-      const ends=[];for(const l of lines)if(l.length>=8)ends.push({l,i:0},{l,i:l.length-1});
+      // Each entry is one end of a line, and its index is read from the line as it stands NOW. The rules below cut
+      // and splice lines as they go; an index stored up front went stale the moment a line was shortened from its
+      // start, and the next pair to look at that line's far end read a point that no longer existed. That threw,
+      // and the whole word failed to build: every Petit word with a Z in it, and S before f or t. (The assignments
+      // to `.i` further down are now no-ops: the setter exists only because this script is strict.)
+      const endOf=(l,last)=>({l,last,get i(){return this.last?this.l.length-1:0;},set i(v){}});
+      const ends=[];for(const l of lines)if(l.length>=8)ends.push(endOf(l,false),endOf(l,true));
       for(let a=0;a<ends.length;a++)for(let b=a+1;b<ends.length;b++){const A=ends[a],B=ends[b];if(A.gone||B.gone||A.l===B.l)continue;const p=A.l[A.i],q=B.l[B.i],d=Math.hypot(p.x-q.x,p.y-q.y);if(d<.5||d>tol*2.2)continue;
         // Ends that already coincide (a real junction from whole-word thinning) still get the hairpin and detour
         // treatment below; only the pull-together is skipped for them.
