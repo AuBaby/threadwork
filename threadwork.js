@@ -50,6 +50,13 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       { name:'Ice', hex:'#c9e5f5', yarn:'#b2d0dd' }, { name:'Navy', hex:'#27497e' },
       { name:'Purple', hex:'#c0baec' }, { name:'Grey', hex:'#acbbba' }
     ];
+    // The store's own swatch colour for each dye: one flat colour per dye name, shared across the product lines
+    // (the same table as the theme's snippets/custom-styles.liquid, ".swatch-image[data-value=…]"; change both
+    // together). The studio's item colour buttons show these, so a shopper sees the same swatch for a colour on the
+    // product page and here. A fabric's own `hex` is the knit's measured colour and still drives the cloth itself.
+    const STORE_SWATCH = { 'Pink Quartz':'#f5aab9', 'Henna':'#d1a180', 'Moon Stone':'#aba8a7', 'Sky Blue':'#8da6c7', 'Citron':'#ddd78f',
+      'Cream':'#dad1c1', 'Butter Cream':'#edd7c6', 'Cloud':'#e0d8cf', 'Hydrangea':'#b9cfdf', 'Lavande':'#d7bada', 'Peony':'#ecc2c4',
+      'Charcoal':'#4b4b54', 'Chocolate':'#552b20', 'Cobalt':'#263074', 'Pink Haze':'#ce7980' };
     const fabrics = [
       // Every blanket is a cleaned-up knit image (Codex): `image` is its swatch, `hex` the average colour of the original photo.
       // `scale` sets the stitch size on the cloth; Pink Quartz (1254px, ~28 stitches across) is the reference look.
@@ -129,7 +136,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     function toast(text){$('toast').textContent=text;$('toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('show'),2200);}
     // Near-white swatches vanish into the panel without a firmer edge.
     const pale=hex=>[1,3,5].every(i=>parseInt(hex.slice(i,i+2),16)>228);
-    function swatches(items,container,key){items.forEach((item,i)=>{const b=document.createElement('button');b.className='swatch'+(key==='fabric'?' fabric-swatch':'');b.style.setProperty('--swatch',item.hex);if(pale(item.hex))b.classList.add('pale');b.title=item.name;b.setAttribute('aria-label',item.name);b.setAttribute('aria-pressed',String(i===state[key]));b.addEventListener('click',()=>{state[key]=i;updateControls();if(key==='fabric')ensureTexture(fabrics[i]).then(()=>{drawCloth();requestRender();});else requestRender();});$(container).append(b);});}
+    function swatches(items,container,key){items.forEach((item,i)=>{const b=document.createElement('button');b.className='swatch'+(key==='fabric'?' fabric-swatch':'');const colour=key==='fabric'&&STORE_SWATCH[item.name]||item.hex;b.style.setProperty('--swatch',colour);if(pale(colour))b.classList.add('pale');b.title=item.name;b.setAttribute('aria-label',item.name);b.setAttribute('aria-pressed',String(i===state[key]));b.addEventListener('click',()=>{state[key]=i;updateControls();if(key==='fabric')ensureTexture(fabrics[i]).then(()=>{drawCloth();requestRender();});else requestRender();});$(container).append(b);});}
     swatches(threads,'threads','thread');swatches(fabrics,'fabrics','fabric');
     // When a swatch row has to wrap, split it evenly rather than leaving a short last line.
     function balanceRows(){for(const row of root.querySelectorAll('.swatches')){const items=[...row.children];if(!items.length)continue;row.style.maxWidth='';if(getComputedStyle(row).display==='grid'){const cs=getComputedStyle(row),sw=items[0].offsetWidth,inner=row.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),minGap=10;if(inner<=0||!sw)continue;const fit=Math.max(1,Math.floor((inner+minGap)/(sw+minGap)));let per=items.length;if(fit<items.length){const rows=Math.ceil(items.length/fit);per=Math.ceil(items.length/rows);}row.style.gridTemplateColumns='repeat('+per+','+sw+'px)';continue;}const gap=parseFloat(getComputedStyle(row).gap)||0,w=items[0].offsetWidth,fit=Math.max(1,Math.floor((row.clientWidth+gap)/(w+gap)));if(fit>=items.length)continue;const rows=Math.ceil(items.length/fit),per=Math.ceil(items.length/rows);row.style.maxWidth=(per*w+(per-1)*gap)+'px';}}
@@ -647,7 +654,16 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
             const inkRun=(p,q)=>{const d=Math.hypot(q.x-p.x,q.y-p.y),m=Math.max(1,Math.ceil(d));for(let i=0;i<=m;i++){const t=i/m;if(!onInk(p.x+(q.x-p.x)*t,p.y+(q.y-p.y)*t))return false;}return true;};
             const doubled=p=>{const h=closestStrokePoint(p,previous.paths);return h.distance<12&&inkRun(p,h.point);};
             const samples=[tip],pts=side?O.slice(j):O.slice(0,j).reverse();let acc=0;for(let i=1;i<pts.length;i++){acc+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);if(acc>=3){samples.push(pts[i]);acc=0;}}
-            if(side>=0&&samples.every(doubled)){
+            // The stub is spare only while the previous letter's thread reaches as far as the stub does. Where that
+            // stroke stops short of the tip (Damion's o ends its tail just under the top of the i's stem, so the
+            // stem lost its top after an o and after nothing else), the stub is the only thread that gets to the
+            // end of the ink. Walk on from the tip, in the stub's own direction, to the edge of the ink: if that
+            // edge is itself out of the previous letter's reach (the same 12 units that make a stub `doubled`),
+            // the ink there would be left bare, and the stub stays.
+            const reaches=()=>{const back=pts.length>4?pts[pts.length-5]:L;let dx=tip.x-back.x,dy=tip.y-back.y;const dl=Math.hypot(dx,dy);if(dl<.5)return false;dx/=dl;dy/=dl;
+              let e=0;while(e<24&&onInk(tip.x+dx*(e+1),tip.y+dy*(e+1)))e++;if(e<3)return false;
+              return closestStrokePoint({x:tip.x+dx*e,y:tip.y+dy*e},previous.paths).distance>=12;};
+            if(side>=0&&samples.every(doubled)&&!reaches()){
               if(side){O.splice(j);O.push({...L});}else{O.splice(0,j);O.unshift({...L});}
               const ex=previous.exit,atExit=(l,e)=>Math.hypot(l[e?l.length-1:0].x-ex.x,l[e?l.length-1:0].y-ex.y)<.6,EL=previous.paths.find(l=>l.length>=8&&(atExit(l,1)||atExit(l,0))&&Math.hypot(l[0].x-l[l.length-1].x,l[0].y-l[l.length-1].y)>1);
               if(EL){const eEnd=atExit(EL,1)?1:0,kP=alongStroke(EL,eEnd,8),kPt=alongStroke(EL,eEnd,12),kQ=alongStroke(O,side,8),kQt=alongStroke(O,side,12),unit=(x,y)=>{const l=Math.hypot(x,y)||1;return{x:x/l,y:y/l};};
