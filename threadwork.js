@@ -1130,7 +1130,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     const STITCHABLE=/[^\p{L}\p{N} .,'&-]/gu;const clean=text=>text.replace(STITCHABLE,'').replace(/ {2,}/g,' ');const letters=text=>[...clean(text).replace(/\s/g,'')].length;
     const PRICE_PER_LETTER=10;let MAX_LETTERS=parseInt(embed.max,10)||(embed.line==='popcorn'?3:20);
     // The cap shows in the hint, the field label (initials when 3 or fewer) and the counter.
-    const POPCORN_TIP='The Popcorn’s thick knit is best suited for initials. For a full name, we recommend The Sawa or The Little Love.';
+    const POPCORN_TIP='The Popcorn’s thick knit is best suited for initials. For a full name, we recommend The Sawa or the Little Love.';
     const setMax=(n,adult=/adult/i.test(embed.title||''))=>{MAX_LETTERS=n;const v=root.querySelector('label[for=name]+.value');if(v)v.textContent='Up to '+n+' characters';const l=root.querySelector('label[for=name]');if(l)l.textContent=n<=3?'Embroidery initials':'Embroidery text';const c=root.querySelector('#charCount');if(c)c.textContent=letters(state.text)+'/'+n;const tip=root.querySelector('#lengthTip');if(tip){if(!tip.dataset.full)tip.dataset.full=tip.innerHTML;if(n<=3&&!adult)tip.textContent=POPCORN_TIP;else tip.innerHTML=tip.dataset.full;}};
     setMax(MAX_LETTERS);
     // Outside a product page the studio offers the store's embroiderable products in a dropdown; picking one
@@ -1170,10 +1170,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     function updatePick(){const img=$('productPhoto');if(!img||embed.mode==='product')return;const src=photoOf(product,state.fabric);if(src&&img.getAttribute('src')!==src)img.src=src;img.alt=product.name+' in '+fabrics[state.fabric].name;}
     // "Where did my name go?" It stays until the next tap, key or edit. The tap that chose the item is still on its way up the page
     // when the tip appears, so that one tap is let through (a flag, not a clock: two timestamps can land in the same instant).
-    let goneFresh=false;
+    let goneFresh=false,kept=null;
     function tellGone(p){const field=root.querySelector('.text-field'),why=$('goneWhy'),row=root.querySelector('label[for=name]');if(!field||!why)return;field.classList.toggle('told',!!p);if(row)row.parentElement.classList.toggle('hush',!!p);if(!p)return;goneFresh=true;
       const kept=['letter','two letters','three letters'][Math.max(1,Math.min(3,letters(state.text)))-1];
-      why.textContent='The Popcorn’s thick knit is best suited for initials, so we kept your first '+kept+'.'+(/adult/i.test(p.name)?'':' For a full name, we recommend The Sawa or The Little Love.');}
+      why.textContent='The Popcorn’s thick knit is best suited for initials, so we kept your first '+kept+'.'+(/adult/i.test(p.name)?'':' For a full name, we recommend The Sawa or the Little Love.');}
     function applyProduct(p){
       product=p;
       // The colour buttons are built once, in the fabrics' own order; `order` puts them in the product's order (the store's).
@@ -1182,8 +1182,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       $('productName').textContent=p.name;$('fabricLabel').textContent=p.line==='beanie'?'Beanie color':/set/i.test(p.name)?'Set color':'Blanket color';
       $('productMenu').querySelectorAll('.pick-row').forEach((r,i)=>r.setAttribute('aria-checked',String(PRODUCTS[i]===p)));
       // An initials-only item keeps the first letters of a longer name, in capitals like typed initials, and says so under the text box.
-      setMax(p.max,/adult/i.test(p.name));const had=letters(state.text);let next=had>p.max?[...clean(state.text)].slice(0,p.max).join(''):state.text;if(p.max<=3)next=next.toUpperCase();
-      if(next!==state.text){state.text=next;$('name').value=next;}
+      // What was typed is remembered (`kept`), so moving on to an item that takes a full name brings the name back, unless the box was edited since.
+      setMax(p.max,/adult/i.test(p.name));const had=letters(state.text),base=kept&&state.text===kept.to?kept.from:state.text;let next=letters(base)>p.max?[...clean(base)].slice(0,p.max).join(''):base;if(p.max<=3)next=next.toUpperCase();
+      kept=next!==base?{from:base,to:next}:null;if(next!==state.text){state.text=next;$('name').value=next;}
       tellGone(had>p.max&&p.max<=3?p:null);
       if(!shown.includes(state.fabric)&&shown.length){state.fabric=shown[0];ensureTexture(fabrics[state.fabric]).then(()=>{drawCloth();requestRender();});}
       updateControls();updatePick();if(ready){makeGeometry();requestRender();}
@@ -1198,7 +1199,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       btn.addEventListener('click',()=>setOpen(menu.hidden));
       document.addEventListener('click',e=>{if(menu.hidden)return;const path=e.composedPath();if(!path.includes(menu)&&!path.includes(btn))setOpen(false);});
       root.addEventListener('keydown',e=>{if(e.key==='Escape'&&!menu.hidden){setOpen(false);btn.focus();}});
-      $('name').addEventListener('input',()=>tellGone(null));document.addEventListener('click',()=>{if(goneFresh)goneFresh=false;else tellGone(null);});root.addEventListener('keydown',e=>{if(e.key==='Escape')tellGone(null);});
+      $('name').addEventListener('input',()=>{kept=null;tellGone(null);});document.addEventListener('click',()=>{if(goneFresh)goneFresh=false;else tellGone(null);});root.addEventListener('keydown',e=>{if(e.key==='Escape')tellGone(null);});
       // Away from the store this page is The Embroidery Lab. On the store (lab page or product page) the heading stays as it is.
       if(embed.mode==='studio'){const h=root.querySelector('.panel-head h2');if(h){h.textContent='The Embroidery Lab';fitHeading();}}
       applyProduct(PRODUCTS[0]);}
