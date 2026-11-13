@@ -167,7 +167,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       $('fontstyles').querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-pressed',String(i===state.font)));
       $('threads').querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-pressed',String(i===state.thread)));
       $('fabrics').querySelectorAll('button').forEach((b,i)=>b.setAttribute('aria-pressed',String(i===state.fabric)));
-      $('charCount').textContent=letters(state.text)+'/'+MAX_LETTERS;$('price').textContent='$'+(letters(state.text)*PRICE_PER_LETTER).toFixed(2);root.querySelector('.price-note').classList.toggle('show',letters(state.text)>0);fitPrice();$('weightValue').textContent=state.weight<3.5?'Extra fine':state.weight<4.25?'Delicate':state.weight<5.75?'Classic':'Chunky';
+      $('charCount').textContent=letters(state.text)+'/'+MAX_LETTERS;$('price').textContent='$'+(letters(state.text)*PRICE_PER_LETTER).toFixed(2);root.querySelector('.price-note').classList.toggle('show',letters(state.text)>0);fitPrice();paintTotal();$('weightValue').textContent=state.weight<3.5?'Extra fine':state.weight<4.25?'Delicate':state.weight<5.75?'Classic':'Chunky';
       $('lengthValue').textContent=(state.length/2.2).toFixed(1)+' mm';$('advanced').setAttribute('aria-checked',String(state.advanced));$('advancedPanel').hidden=!state.advanced;$('zoomReadout').textContent=Math.round(state.zoom*100)+'%';$('resetView').disabled=state.zoom===1;
       canvas.setAttribute('aria-label',`${state.text||'Blank fabric'} embroidered in ${threads[state.thread].name.toLowerCase()} chain stitches on ${fabrics[state.fabric].name.toLowerCase()} knit fabric`);
     }
@@ -1073,7 +1073,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       stitches=0;if(!geometry)return;
       // A thread may carry its own hand-picked yarn colour.
       const hex=threads[state.thread].yarn||yarn(threads[state.thread].hex);
-      const scale=Math.min(980/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);
+      const scale=Math.min(fitWidth()/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);
       // Thread weight and stitch length are set in font units, so the
       // stitch scales with the lettering: a long name gets a finer thread.
       const weight=state.weight*scale,length=state.length*scale;
@@ -1107,7 +1107,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     }
     function drawFontGuide(){
       if(!geometry)return;
-      const scale=Math.min(980/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);
+      const scale=Math.min(fitWidth()/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);
       art.save();art.translate(W*.5,letterY());art.rotate(0);art.scale(scale,scale);applyFont(art);art.fillStyle='#243e3638';if(monogram)monogram.layout.forEach(([ch,x])=>art.fillText(ch,x-geometry.cx,-geometry.cy));else art.fillText(state.text,-geometry.cx,-geometry.cy);art.letterSpacing='0px';art.restore();
     }
     $('fontGuide').addEventListener('click',()=>{state.guide=!state.guide;$('fontGuide').setAttribute('aria-pressed',String(state.guide));$('fontGuide').setAttribute('aria-label',state.guide?'Hide font guide':'Show font guide');requestRender();});
@@ -1120,7 +1120,11 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Resetting the width wipes the bitmap outright; Safari can leave stale
     // patches of a shadowed canvas behind after a plain clearRect.
     // Lane fabrics (Little Love hearts) scale the knit with the lettering and sit the name inside a lane.
-    function letterBox(){const y=letterY();if(!geometry)return{y,h:226};const s=Math.min(980/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);return{y,h:Math.max(60,geometry.height*s)};}
+    // How wide the lettering may be, in the cloth's own units (it is 1600 wide): 980 at most. The cloth covers its frame, so in a
+    // tall, narrow frame (a tablet-sized window, where the panel beside it is taller than the frame is wide) its sides are cropped
+    // away. There the limit is what is left in view, less 48 units each side, so a long name is never cut off at 100%.
+    function fitWidth(){const r=$('canvaswrap').getBoundingClientRect();if(!r.width||!r.height)return 980;return Math.max(360,Math.min(980,r.width/Math.max(r.width/W,r.height/H)-96));}
+    function letterBox(){const y=letterY();if(!geometry)return{y,h:226};const s=Math.min(fitWidth()/Math.max(geometry.width,360),410/Math.max(geometry.height,90),2.1);return{y,h:Math.max(60,geometry.height*s)};}
     function renderArtwork(){if(fabrics[state.fabric].lane)drawCloth();artwork.width=W;art.drawImage(cloth,0,0);if(state.guide)drawFontGuide();drawEmbroidery();drawView();}
     function requestRender(){if(!ready||(isModal()&&shell.hidden))return;cancelAnimationFrame(raf);raf=requestAnimationFrame(renderArtwork);}
     // Reading a pixel back makes Safari finish the artwork before it is
@@ -1165,9 +1169,43 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       'Adult Beanie|Lavande':ASSETS+'products/adult-beanie-lavande.webp'
     };
     let product=PRODUCTS[0];
+    // On the store's lab page each item and colour is a product of its own; this is its handle (aubabyshop.com/products/<handle>).
+    const LAB_HANDLE={
+      'The Sawa Blanket|Pink Quartz':'copy-of-the-sawa-pink-quartz','The Sawa Blanket|Henna':'the-sawa-blanket',
+      'The Sawa Blanket|Moon Stone':'the-sawa-moon-stone','The Sawa Blanket|Sky Blue':'the-sawa-sky-blue',
+      'The Sawa Blanket|Citron':'the-sawa-citron','The Popcorn Blanket|Pink Quartz':'the-popcorn-pink-quartz',
+      'The Popcorn Blanket|Henna':'the-popcorn-blanket','The Popcorn Blanket|Moon Stone':'the-popcorn-moon-stone',
+      'The Popcorn Blanket|Sky Blue':'the-popcorn-sky-blue','The Popcorn Blanket|Citron':'the-popcorn-citron',
+      'Adult Popcorn Blanket|Henna':'adult-popcorn-blanket-henna','Adult Popcorn Blanket|Cream':'adult-popcorn-blanket-cream',
+      'Adult Popcorn Blanket|Moon Stone':'adult-popcorn-blanket-moon-stone-grey','Little Love Blanket|Cloud':'luxury-cashmere-merino-baby-blanket-peach',
+      'Little Love Blanket|Butter Cream':'luxury-cashmere-merino-baby-blanket-beige','Little Love Blanket|Hydrangea':'luxury-cashmere-merino-baby-blanket-blue',
+      'Little Love Blanket|Peony':'luxury-cashmere-merino-baby-blanket-pink','Little Love Blanket|Lavande':'little-love-blanket-lavande',
+      'Cashmere Cloud Gift Set|Butter Cream':'cashmere-cloud-baby-blanket-gift-set-beige','Cashmere Cloud Gift Set|Peony':'cashmere-cloud-baby-blanket-gift-set-pink',
+      'Cashmere Cloud Gift Set|Hydrangea':'cashmere-cloud-baby-blanket-gift-set-blue','Kid Beanie|Cobalt':'toddler-cashmere-cloud-beanie-cobalt',
+      'Kid Beanie|Charcoal':'toddler-cashmere-cloud-beanie-charcoal','Kid Beanie|Pink Haze':'toddler-cashmere-cloud-beanie-pink-haze',
+      'Kid Beanie|Chocolate':'toddler-cashmere-cloud-beanie-chocolate','Kid Beanie|Lavande':'toddler-beanie-lavander',
+      'Adult Beanie|Cobalt':'adult-beanie-cobalt','Adult Beanie|Charcoal':'adult-beanie-charcoal',
+      'Adult Beanie|Pink Haze':'adult-beanie-pink-haze','Adult Beanie|Chocolate':'adult-cashmere-cloud-beanie-chocolate',
+      'Adult Beanie|Lavande':'adult-beanie-lavender'
+    };
+    const colourOf=()=>product.colors.find(c=>fabricIndex(product.line,c)===state.fabric)||product.colors[0],labHandle=()=>LAB_HANDLE[product.name+'|'+colourOf()]||'';
+    // What the store says about the chosen product, once asked: its price and whether any of it is in stock.
+    const LIVE={};
+    function labSync(){if(embed.mode!=='lab'||!labSync.on)return;const h=labHandle();if(!h||LIVE[h])return;fetchProduct(h).then(j=>{if(!j)return;LIVE[h]={price:j.price/100,sold:!j.variants.some(v=>v.available)};paintTotal();});}
+    // The store's price for each item on 2026-11-13 (every colour of an item costs the same). The lab cannot ask the store, so change these when a price changes.
+    const ITEM_PRICE={'The Sawa Blanket':170,'The Popcorn Blanket':170,'Adult Popcorn Blanket':330,'Little Love Blanket':170,'Cashmere Cloud Gift Set':200,'Kid Beanie':40,'Adult Beanie':60};
+    // In the lab the button carries the total, worded as on the store's product page ("Add to cart · $230"), and the line under it
+    // splits that into the item and the embroidery. (On a product page the button and that line stay as they were.)
+    function paintTotal(){if(embed.mode==='product'||!paintTotal.on)return;const live=embed.mode==='lab'?LIVE[labHandle()]:null,item=live?live.price:ITEM_PRICE[product.name],extra=letters(state.text)*PRICE_PER_LETTER,short=v=>money(v).replace(/\.00$/,''),btn=$('download'),line=root.querySelector('.price-inner');
+      if(item==null||!btn||!line)return;if(btn.getAttribute('aria-busy')!=='true'){const sold=!!(live&&live.sold);btn.textContent=sold?'Sold out':'Add to cart · '+short(item+extra);btn.dataset.idle=btn.textContent;btn.disabled=sold;}
+      const bold=(v,id)=>{const s=document.createElement('strong');if(id)s.id=id;s.textContent=v;return s;};line.replaceChildren(product.name+' ',bold(short(item)),' + Hand Embroidery ',bold(short(extra),'price'));
+      // The line runs the full width of the button, end to end (d): its size is set from its own measured width, up to 18px
+      // (so it stops growing on a wide single-column layout), then eased down if rounding left it a hair too wide.
+      const note=line.parentElement,r=document.createRange();r.selectNodeContents(line);note.style.fontSize='12px';const w=r.getBoundingClientRect().width,room=note.clientWidth;if(!(w>0&&room>0))return;
+      let size=Math.min(18,12*room/w);note.style.fontSize=size.toFixed(2)+'px';while(r.getBoundingClientRect().width>room&&size>8){size-=.05;note.style.fontSize=size.toFixed(2)+'px';}}
     const photoOf=(p,fi)=>PHOTOS[p.name+'|'+(p.colors.find(c=>fabricIndex(p.line,c)===fi)||p.colors[0])]||'';
     // The picker's photo follows the product and the colour. On a product page the picker is hidden, so nothing is loaded.
-    function updatePick(){const img=$('productPhoto');if(!img||embed.mode==='product')return;const src=photoOf(product,state.fabric);if(src&&img.getAttribute('src')!==src)img.src=src;img.alt=product.name+' in '+fabrics[state.fabric].name;}
+    function updatePick(){const img=$('productPhoto');if(!img||embed.mode==='product')return;const src=photoOf(product,state.fabric);if(src&&img.getAttribute('src')!==src)img.src=src;img.alt=product.name+' in '+fabrics[state.fabric].name;labSync();}
     // "Where did my name go?" It stays until the next tap, key or edit. The tap that chose the item is still on its way up the page
     // when the tip appears, so that one tap is let through (a flag, not a clock: two timestamps can land in the same instant).
     let goneFresh=false,kept=null;
@@ -1186,8 +1224,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       setMax(p.max,/adult/i.test(p.name));const had=letters(state.text),base=kept&&state.text===kept.to?kept.from:state.text;let next=letters(base)>p.max?[...clean(base)].slice(0,p.max).join(''):base;if(p.max<=3)next=next.toUpperCase();
       kept=next!==base?{from:base,to:next}:null;if(next!==state.text){state.text=next;$('name').value=next;}
       tellGone(had>p.max&&p.max<=3?p:null);
-      if(!shown.includes(state.fabric)&&shown.length){state.fabric=shown[0];ensureTexture(fabrics[state.fabric]).then(()=>{drawCloth();requestRender();});}
-      updateControls();updatePick();if(ready){makeGeometry();requestRender();}
+      // The colour carries over by name: Sky Blue on the Sawa stays Sky Blue on the Popcorn. An item without that colour starts on its first.
+      if(!shown.includes(state.fabric)&&shown.length){const same=p.colors.findIndex(c=>fabricIndex(fabrics[state.fabric].line,c)===state.fabric);state.fabric=same>=0&&at[same]>=0?at[same]:shown[0];ensureTexture(fabrics[state.fabric]).then(()=>{drawCloth();requestRender();});}
+      paintTotal.on=true;updateControls();updatePick();if(ready){makeGeometry();requestRender();}
     }
     // The photo and name are the menu button. Each row of the menu: a photo, the name, and what can be stitched on it.
     if(embed.mode!=='product'){const menu=$('productMenu'),btn=$('productButton');
@@ -1199,9 +1238,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       btn.addEventListener('click',()=>setOpen(menu.hidden));
       document.addEventListener('click',e=>{if(menu.hidden)return;const path=e.composedPath();if(!path.includes(menu)&&!path.includes(btn))setOpen(false);});
       root.addEventListener('keydown',e=>{if(e.key==='Escape'&&!menu.hidden){setOpen(false);btn.focus();}});
-      $('name').addEventListener('input',()=>{kept=null;tellGone(null);});document.addEventListener('click',()=>{if(goneFresh)goneFresh=false;else tellGone(null);});root.addEventListener('keydown',e=>{if(e.key==='Escape')tellGone(null);});
-      // Away from the store this page is The Embroidery Lab. On the store (lab page or product page) the heading stays as it is.
-      if(embed.mode==='studio'){const h=root.querySelector('.panel-head h2');if(h){h.textContent='The Embroidery Lab';fitHeading();}}
+      $('name').addEventListener('input',()=>{kept=null;tellGone(null);});document.addEventListener('click',()=>{if(goneFresh)goneFresh=false;else tellGone(null);});root.addEventListener('keydown',e=>{if(e.key==='Escape')tellGone(null);});addEventListener('resize',()=>paintTotal());document.fonts.ready.then(()=>paintTotal());
+      // The standalone page and the store's lab page are The Embroidery Lab. A product page's popup keeps "Add Hand Embroidery".
+      {const h=root.querySelector('.panel-head h2');if(h){h.textContent='The Embroidery Lab';fitHeading();}}
       applyProduct(PRODUCTS[0]);}
     $('name').addEventListener('input',e=>{let v=clean(e.target.value);if(MAX_LETTERS<=3)v=v.toUpperCase();if(v!==e.target.value)e.target.value=v;if(letters(v)>MAX_LETTERS){e.target.value=state.text;return;}state.text=v;updateControls();clearTimeout(debounce);debounce=setTimeout(()=>{makeGeometry();requestRender();},40);});
     for(const key of ['weight','length'])$(key).addEventListener('input',e=>{state[key]=+e.target.value;updateControls();requestRender();});
@@ -1222,7 +1261,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     ['pointerup','pointercancel','lostpointercapture'].forEach(event=>$('canvaswrap').addEventListener(event,e=>{touches.delete(e.pointerId);drag=null;if(touches.size<2)pinch=null;}));
     // ---- Shopify cart ----
     // Only on a real product page (the theme's cart and drawer exist and this is not the studio's preview).
-    const canSell=()=>embed.mode==='product'&&!previewing&&!!(window.theme&&window.theme.cart&&window.theme.drawer);
+    const canSell=()=>(embed.mode==='product'||embed.mode==='lab')&&!previewing&&!!(window.theme&&window.theme.cart&&window.theme.drawer);
     // A click on the page's Add button never goes quiet: if the theme's cart isn't there, say so.
     const tryAdd=(btn,withEmbroidery)=>{if(canSell())addToCart(btn,withEmbroidery);else notify('Could not add to cart. Please refresh the page and try again.');};
     // "Custom Hand Embroidery" variants, one per letter count; looked up by title at run time, this list is the fallback.
@@ -1255,8 +1294,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         let embroideryId=null;
         if(withEmbroidery){const emb=await fetchProduct(EMBROIDERY_HANDLE);const match=emb&&emb.variants.find(v=>v.title.startsWith(n+' Letter'));embroideryId=match?String(match.id):EMBROIDERY_VARIANTS[n-1];if(!embroideryId)throw new Error('No embroidery option for '+n+' letters');}
         // The blanket: flags from Liquid first, the product JSON as a fallback.
-        const urlVariant=new URLSearchParams(location.search).get('variant');let variantId=urlVariant||embed.variant,title=embed.title,link=embed.url;
-        if(!variantId||!title){const prod=await fetchProduct(embed.product);if(!prod)throw new Error('Product not found');const want=new URLSearchParams(location.search).get('variant');const v=prod.variants.find(x=>String(x.id)===want)||prod.variants.find(x=>x.available)||prod.variants[0];variantId=variantId||String(v.id);title=title||prod.title;}
+        const lab=embed.mode==='lab',urlVariant=lab?null:new URLSearchParams(location.search).get('variant');let variantId=lab?'':urlVariant||embed.variant,title=lab?'':embed.title,link=lab?'':embed.url;
+        // The lab page has no product of its own: the item and colour chosen in the picker name the store product to sell.
+        if(lab){const handle=labHandle(),prod=handle?await fetchProduct(handle):null;if(!prod)throw new Error('that item is not available right now');const v=prod.variants.find(x=>x.available);if(!v)throw new Error(prod.title+' is sold out');variantId=String(v.id);title=prod.title;link=location.origin+'/products/'+handle;}
+        else if(!variantId||!title){const prod=await fetchProduct(embed.product);if(!prod)throw new Error('Product not found');const want=new URLSearchParams(location.search).get('variant');const v=prod.variants.find(x=>String(x.id)===want)||prod.variants.find(x=>x.available)||prod.variants[0];variantId=variantId||String(v.id);title=title||prod.title;}
         if(!link)link=location.origin+'/products/'+embed.product;else if(link.startsWith('/'))link=location.origin+link;
         const qty=parseInt(document.querySelector('.product-page--block .quantity-selector--input')?.value)||1;
         // Snapshot upload and cart add run side by side; the drawer opens once both are done, so the preview is in place.
@@ -1281,7 +1322,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         closeModal();
         {const t=document.querySelector('[data-threadwork-open]');if(t)t.dataset.quiet='1';}
         saved=null;renderSummary();announce('added',withEmbroidery?{letters:n,font:fonts[state.font].name,thread:threads[state.thread].name}:{letters:0});
-        try{window.theme.drawer.open('right','cart-drawer',document.querySelector('[data-threadwork-open]'));}catch(e){location.href='/cart';}
+        try{window.theme.drawer.open('right','cart-drawer',document.querySelector('[data-threadwork-open]')||btn);}catch(e){location.href='/cart';}
       }catch(e){console.error('Threadwork: add to cart failed',e);notify('Could not add to cart: '+(e&&e.message||'please try again'));}
       finally{setBusy(false,btn);}
     }
@@ -1326,6 +1367,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // A cart thumbnail links back here with ?tw_text=&tw_font=&tw_thread=: rebuild the saved embroidery and show its card.
     function restoreFromUrl(){if(embed.mode!=='product'||urlRestore.cancelled)return;const q=new URLSearchParams(location.search);let text=clean((q.get('tw_text')||'').trim());if(MAX_LETTERS<=3)text=text.toUpperCase();if(!text||letters(text)>MAX_LETTERS)return;const norm=t=>String(t).toLowerCase().replace(/[^a-z]/g,'');const fi=fonts.findIndex(f=>norm(f.name)===norm(q.get('tw_font')||'')),ti=threads.findIndex(t=>norm(t.name)===norm(q.get('tw_thread')||''));state.text=text;$('name').value=text;if(fi>=0)state.font=fi;if(ti>=0)state.thread=ti;updateControls();makeGeometry();renderArtwork();saved={text,font:state.font,thread:state.thread,fabric:state.fabric,n:letters(text),thumb:thumbJpeg()};renderSummary();if(urlRestore.openWhenReady)openModal();}
     cartButton.addEventListener('click',()=>{if(embed.mode==='product'&&!previewing&&FLOW==='save')saveEmbroidery();else if(canSell())addToCart();});
+    // From here the store can be asked about the lab's chosen product (fetchProduct exists now).
+    labSync.on=true;labSync();
     // A knit texture is pushed to the blanket's catalogue colour (per-channel gain on its
     // average), then cropped to the size at which its right edge best continues its left edge
     // (and bottom its top), so the lattice lines up across the repeat.
