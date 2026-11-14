@@ -1227,20 +1227,27 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // that frames the stitching is left (d). It is tied to the scroll, so nothing jumps: the height shrinks by exactly what was scrolled,
     // a bottom margin takes up the same amount (the panel below does not move), and the picture slides so the stitching ends up centred.
     // Zoomed in far enough that the stitching fills the preview, there is nothing to crop. The zoom buttons fade out while it is cropped.
-    function cropPreview(){const w=root.querySelector('.workspace'),s=root.querySelector('.studio'),wrap=$('canvaswrap'),scene=$('scene');if(!w||!s||!wrap||!scene)return;
-      const side=root.querySelector('aside'),btn=$('download'),clear=()=>{if(wrap.style.height||w.style.marginBottom){wrap.style.height=wrap.style.flex=w.style.marginBottom=scene.style.objectPosition='';if(side)side.style.marginTop='';}w.classList.remove('cropped');};
-      if(getComputedStyle(w).position!=='sticky')return clear();
-      const past=w.getBoundingClientRect().top-s.getBoundingClientRect().top;if(past<1)return clear();
+    function cropPreview(){const w=root.querySelector('.workspace'),s=root.querySelector('.studio'),wrap=$('canvaswrap'),scene=$('scene'),side=root.querySelector('aside'),btn=$('download');if(!w||!s||!wrap||!scene||!side)return;
+      const clear=()=>{if(wrap.style.height||w.style.marginBottom){wrap.style.height=wrap.style.flex=w.style.marginBottom=scene.style.objectPosition=side.style.marginTop='';}w.classList.remove('cropped');};
+      if(getComputedStyle(w).position!=='sticky'){cancelAnimationFrame(cropPreview.raf);cropPreview.raf=0;cropPreview.cur=0;return clear();}
+      const past=w.getBoundingClientRect().top-s.getBoundingClientRect().top;
       const width=wrap.clientWidth,k=width/W,full=k*H;let rest=+wrap.dataset.rest||0;if(!wrap.style.height||wrap.dataset.restW!==String(width)){const keep=wrap.style.height;wrap.style.height='';rest=wrap.clientHeight;wrap.style.height=keep;wrap.dataset.rest=rest;wrap.dataset.restW=width;}
       const box=letterBox(),tall=k*state.zoom*box.h,mid=k*(H/2+state.panY+state.zoom*(box.y-H/2)),band=Math.min(rest,Math.max(104,Math.round(tall+64))),room=rest-band;
-      const c=room<8?0:Math.min(past,room),f=room<8?0:c/room,h=rest-c,from=.18*(full-rest),to=Math.max(0,Math.min(full-band,mid-band/2)),off=from+(to-from)*f;
+      const goal=room<8||past<1?0:Math.min(past,room),from=.18*(full-rest),to=Math.max(0,Math.min(full-band,mid-band/2));
       // Where the pinning ends (d): the preview lets go when the cart button arrives just under it, so the two leave the screen together
       // and the preview never slides over the button. A sticky box lets go when its bottom margin meets the end of the card, so the margin
       // is made as tall as the button's part of the panel, and the panel is pulled back up by the same amount (nothing moves).
-      const end=btn&&side?Math.max(0,s.getBoundingClientRect().bottom-btn.getBoundingClientRect().top+24):0,mb=Math.max(c,end);
-      wrap.style.flex='none';wrap.style.height=h+'px';w.style.marginBottom=mb+'px';if(side)side.style.marginTop=(-10-(mb-c))+'px';
-      // never exactly 0px: letterY() reads a 0px position as the product popup's layout
-      scene.style.objectPosition='50% '+(-Math.max(.01,off)).toFixed(2)+'px';w.classList.toggle('cropped',c>6);}
+      const end=btn&&past>=1?Math.max(0,s.getBoundingClientRect().bottom-btn.getBoundingClientRect().top+24):0;
+      // Every value is set together from one number (how much is cropped), so the panel below never moves.
+      const put=c=>{if(c<.5&&!end)return clear();const mb=Math.max(c,end),off=from+(to-from)*(room>0?c/room:0);
+        wrap.style.flex='none';wrap.style.height=(rest-c)+'px';w.style.marginBottom=mb+'px';side.style.marginTop=(-10-(mb-c))+'px';
+        // never exactly 0px: letterY() reads a 0px position as the product popup's layout
+        scene.style.objectPosition='50% '+(-Math.max(.01,off)).toFixed(2)+'px';w.classList.toggle('cropped',c>6);};
+      // Scrolling moves it a little at a time, so it simply follows. A sudden change (the phone's keyboard opening moves the page in one go)
+      // is eased over a few frames instead of snapping.
+      const cur=cropPreview.cur||0;cropPreview.put=put;cropPreview.goal=goal;
+      if(!cropPreview.raf&&Math.abs(goal-cur)<=28){cropPreview.cur=goal;return put(goal);}
+      if(!cropPreview.raf){const step=()=>{const d=cropPreview.goal-cropPreview.cur;if(Math.abs(d)<1){cropPreview.cur=cropPreview.goal;cropPreview.raf=0;}else{cropPreview.cur+=d*.2;cropPreview.raf=requestAnimationFrame(step);}cropPreview.put(cropPreview.cur);};cropPreview.raf=requestAnimationFrame(step);}}
     // Add to cart (or Save) with nothing typed: a gentle nudge in the same bubble. The cursor goes to the box, which gives a small wiggle.
     function askName(){const field=root.querySelector('.text-field'),tip=$('goneTip'),input=$('name'),row=root.querySelector('label[for=name]');if(!field||!tip||!input){toast('Type a name first.');return;}
       const few=MAX_LETTERS<=3;tip.querySelector('b').textContent=few?'What initials should we embroider?':'What name should we embroider?';$('goneWhy').textContent=few?'Type them here and watch them stitch.':'Type it here and watch it stitch.';
@@ -1268,7 +1275,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // How tall the preview is, for the phone layout where it sticks to the top (see the stylesheet).
     {const sizePreview=()=>{const w=root.querySelector('.workspace');if(w&&w.offsetHeight)shell.style.setProperty('--tw-preview-h',w.offsetHeight+'px');};sizePreview();addEventListener('resize',sizePreview);document.fonts.ready.then(sizePreview);
       // Pinned = the preview is sticking and the card has scrolled up behind it.
-      const pin=()=>{const w=root.querySelector('.workspace'),s=root.querySelector('.studio');if(!w||!s)return;w.classList.toggle('pinned',getComputedStyle(w).position==='sticky'&&s.getBoundingClientRect().top<w.getBoundingClientRect().top-2);};const both=()=>{pin();cropPreview();};addEventListener('scroll',both,{passive:true});addEventListener('resize',both);both();}
+      const pin=()=>{const w=root.querySelector('.workspace'),s=root.querySelector('.studio');if(!w||!s)return;w.classList.toggle('pinned',getComputedStyle(w).position==='sticky'&&s.getBoundingClientRect().top<w.getBoundingClientRect().top-2);};const both=()=>{pin();cropPreview();};addEventListener('scroll',both,{passive:true});addEventListener('resize',both);both();
+      // iOS moves the page when the keyboard opens or closes without always saying it scrolled, so the preview is also checked then.
+      if(window.visualViewport){visualViewport.addEventListener('resize',both);visualViewport.addEventListener('scroll',both);}
+      const later=()=>[60,250,500].forEach(ms=>setTimeout(both,ms));root.addEventListener('focusin',later);root.addEventListener('focusout',later);}
     // The photo and name are the menu button. Each row of the menu: a photo, the name, and what can be stitched on it.
     if(embed.mode!=='product'){const menu=$('productMenu'),btn=$('productButton');
       const setOpen=on=>{menu.hidden=!on;btn.setAttribute('aria-expanded',String(on));};
