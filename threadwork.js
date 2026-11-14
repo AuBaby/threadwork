@@ -1229,12 +1229,20 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Zoomed in far enough that the stitching fills the preview, there is nothing to crop. The zoom buttons fade out while it is cropped.
     function cropPreview(){const w=root.querySelector('.workspace'),s=root.querySelector('.studio'),wrap=$('canvaswrap'),scene=$('scene'),side=root.querySelector('aside'),btn=$('download');if(!w||!s||!wrap||!scene||!side)return;
       const clear=()=>{if(wrap.style.height||w.style.marginBottom){wrap.style.height=wrap.style.flex=w.style.marginBottom=scene.style.objectPosition=side.style.marginTop='';}w.classList.remove('cropped');};
-      const hold=y=>{if(y===(cropPreview.ty||0))return;cropPreview.ty=y;s.style.transform=y?'translateY('+y.toFixed(1)+'px)':'';s.style.position=y?'relative':'';s.style.zIndex=y?'5':'';};
-      if(getComputedStyle(w).position!=='sticky'){cancelAnimationFrame(cropPreview.raf);cropPreview.raf=0;cropPreview.cur=0;hold(0);return clear();}
       // The cart button is never lost (d): at the end of the card the preview would let go and leave the screen with the button under it.
-      // Instead the card is held where it is (moved down by exactly what the page scrolled past that point), so the preview and the
-      // Add to cart button stay at the top of the screen while the rest of the page (the footer) scrolls on underneath.
-      {const top=w.getBoundingClientRect().top-(cropPreview.ty||0),stick=parseFloat(getComputedStyle(w).top)||0;hold(Math.max(0,stick-top)<.5?0:stick-top);}
+      // Instead, from that point the whole card is fixed to the screen exactly where it stands, so the preview and the Add to cart button
+      // stay at the top while the rest of the page (the footer) scrolls on underneath. A spacer keeps the card's place in the page.
+      // Fixed, not moved by script on every scroll: the browser holds it still by itself, so a fast flick on a phone cannot make it slip.
+      const free=()=>{const h=cropPreview.held;if(!h)return;cropPreview.held=null;h.spacer.remove();s.style.position=s.style.top=s.style.left=s.style.width=s.style.zIndex=s.style.margin='';};
+      if(getComputedStyle(w).position!=='sticky'){cancelAnimationFrame(cropPreview.raf);cropPreview.raf=0;cropPreview.cur=0;free();return clear();}
+      // It is measured after every change to the preview's size (below), never before.
+      // `d` is how far down the card the preview sits when it has reached the end of it, worked out from the sizes themselves (so it is
+      // right even in the middle of a resize): the card's height, less the preview's height and the room kept under it.
+      const settle=()=>{const stick=parseFloat(getComputedStyle(w).top)||0,h=cropPreview.held,r=s.getBoundingClientRect(),d=r.height-w.getBoundingClientRect().height-(parseFloat(w.style.marginBottom)||0);
+        if(h){const at=h.spacer.getBoundingClientRect();if(at.top+d>=stick-.5||Math.abs(at.width-r.width)>1)return free();h.spacer.style.height=r.height+'px';s.style.top=(stick-d)+'px';s.style.left=at.left+'px';return;}
+        if(r.top+d>=stick-.5)return;
+        const spacer=document.createElement('div');spacer.style.cssText='height:'+r.height+'px;margin:'+getComputedStyle(s).margin;s.after(spacer);
+        cropPreview.held={spacer};s.style.position='fixed';s.style.margin='0';s.style.width=r.width+'px';s.style.left=r.left+'px';s.style.top=(stick-d)+'px';s.style.zIndex='5';};
       const past=w.getBoundingClientRect().top-s.getBoundingClientRect().top;
       const width=wrap.clientWidth,k=width/W,full=k*H;let rest=+wrap.dataset.rest||0;if(!wrap.style.height||wrap.dataset.restW!==String(width)){const keep=wrap.style.height;wrap.style.height='';rest=wrap.clientHeight;wrap.style.height=keep;wrap.dataset.rest=rest;wrap.dataset.restW=width;}
       const box=letterBox(),tall=k*state.zoom*box.h,mid=k*(H/2+state.panY+state.zoom*(box.y-H/2)),band=Math.round(rest*.64),room=rest-band; // one fixed height when pinned (d): it does not change with what is typed. The stitching is still centred in it.
@@ -1247,10 +1255,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       let lead=24;if(btn){const top=btn.getBoundingClientRect().top,above=Math.max(...[...btn.parentElement.children].filter(e=>e!==btn&&e.offsetHeight).map(e=>e.getBoundingClientRect().bottom).filter(b=>b<=top+1));if(isFinite(above))lead=Math.max(4,Math.min(24,top-above-7));}
       const end=btn&&past>=1?Math.max(0,s.getBoundingClientRect().bottom-btn.getBoundingClientRect().top+lead):0;
       // Every value is set together from one number (how much is cropped), so the panel below never moves.
-      const put=c=>{if(c<.5&&!end)return clear();const mb=Math.max(c,end),off=from+(to-from)*(room>0?c/room:0);
+      const put=c=>{if(c<.5&&!end){clear();return settle();}const mb=Math.max(c,end),off=from+(to-from)*(room>0?c/room:0);
         wrap.style.flex='none';wrap.style.height=(rest-c)+'px';w.style.marginBottom=mb+'px';side.style.marginTop=(-10-(mb-c))+'px';
         // never exactly 0px: letterY() reads a 0px position as the product popup's layout
-        scene.style.objectPosition='50% '+(-Math.max(.01,off)).toFixed(2)+'px';w.classList.toggle('cropped',c>6);};
+        scene.style.objectPosition='50% '+(-Math.max(.01,off)).toFixed(2)+'px';w.classList.toggle('cropped',c>6);settle();};
       // Scrolling moves it a little at a time, so it simply follows. A sudden change (the phone's keyboard opening moves the page in one go)
       // is eased over a few frames instead of snapping.
       const cur=cropPreview.cur||0;cropPreview.put=put;cropPreview.goal=goal;
