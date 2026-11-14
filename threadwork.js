@@ -1228,13 +1228,17 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // a bottom margin takes up the same amount (the panel below does not move), and the picture slides so the stitching ends up centred.
     // Zoomed in far enough that the stitching fills the preview, there is nothing to crop. The zoom buttons fade out while it is cropped.
     function cropPreview(){const w=root.querySelector('.workspace'),s=root.querySelector('.studio'),wrap=$('canvaswrap'),scene=$('scene');if(!w||!s||!wrap||!scene)return;
-      const clear=()=>{if(wrap.style.height){wrap.style.height=wrap.style.flex=w.style.marginBottom=scene.style.objectPosition='';}w.classList.remove('cropped');};
+      const side=root.querySelector('aside'),btn=$('download'),clear=()=>{if(wrap.style.height||w.style.marginBottom){wrap.style.height=wrap.style.flex=w.style.marginBottom=scene.style.objectPosition='';if(side)side.style.marginTop='';}w.classList.remove('cropped');};
       if(getComputedStyle(w).position!=='sticky')return clear();
       const past=w.getBoundingClientRect().top-s.getBoundingClientRect().top;if(past<1)return clear();
       const width=wrap.clientWidth,k=width/W,full=k*H;let rest=+wrap.dataset.rest||0;if(!wrap.style.height||wrap.dataset.restW!==String(width)){const keep=wrap.style.height;wrap.style.height='';rest=wrap.clientHeight;wrap.style.height=keep;wrap.dataset.rest=rest;wrap.dataset.restW=width;}
-      const box=letterBox(),tall=k*state.zoom*box.h,mid=k*(H/2+state.panY+state.zoom*(box.y-H/2)),band=Math.min(rest,Math.max(104,Math.round(tall+64))),room=rest-band;if(room<8)return clear();
-      const c=Math.min(past,room),f=c/room,h=rest-c,from=.18*(full-rest),to=Math.max(0,Math.min(full-band,mid-band/2)),off=from+(to-from)*f;
-      wrap.style.flex='none';wrap.style.height=h+'px';w.style.marginBottom=c+'px';
+      const box=letterBox(),tall=k*state.zoom*box.h,mid=k*(H/2+state.panY+state.zoom*(box.y-H/2)),band=Math.min(rest,Math.max(104,Math.round(tall+64))),room=rest-band;
+      const c=room<8?0:Math.min(past,room),f=room<8?0:c/room,h=rest-c,from=.18*(full-rest),to=Math.max(0,Math.min(full-band,mid-band/2)),off=from+(to-from)*f;
+      // Where the pinning ends (d): the preview lets go when the cart button arrives just under it, so the two leave the screen together
+      // and the preview never slides over the button. A sticky box lets go when its bottom margin meets the end of the card, so the margin
+      // is made as tall as the button's part of the panel, and the panel is pulled back up by the same amount (nothing moves).
+      const end=btn&&side?Math.max(0,s.getBoundingClientRect().bottom-btn.getBoundingClientRect().top+24):0,mb=Math.max(c,end);
+      wrap.style.flex='none';wrap.style.height=h+'px';w.style.marginBottom=mb+'px';if(side)side.style.marginTop=(-10-(mb-c))+'px';
       // never exactly 0px: letterY() reads a 0px position as the product popup's layout
       scene.style.objectPosition='50% '+(-Math.max(.01,off)).toFixed(2)+'px';w.classList.toggle('cropped',c>6);}
     // Add to cart (or Save) with nothing typed: a gentle nudge in the same bubble. The cursor goes to the box, which gives a small wiggle.
