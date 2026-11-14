@@ -1229,20 +1229,28 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Zoomed in far enough that the stitching fills the preview, there is nothing to crop. The zoom buttons fade out while it is cropped.
     function cropPreview(){const w=root.querySelector('.workspace'),s=root.querySelector('.studio'),wrap=$('canvaswrap'),scene=$('scene'),side=root.querySelector('aside'),btn=$('download');if(!w||!s||!wrap||!scene||!side)return;
       const clear=()=>{if(wrap.style.height||w.style.marginBottom){wrap.style.height=wrap.style.flex=w.style.marginBottom=scene.style.objectPosition=side.style.marginTop='';}w.classList.remove('cropped');};
-      // The cart button is never lost (d): at the end of the card the preview would let go and leave the screen with the button under it.
-      // Instead, from that point the whole card is fixed to the screen exactly where it stands, so the preview and the Add to cart button
-      // stay at the top while the rest of the page (the footer) scrolls on underneath. A spacer keeps the card's place in the page.
-      // Fixed, not moved by script on every scroll: the browser holds it still by itself, so a fast flick on a phone cannot make it slip.
-      const free=()=>{const h=cropPreview.held;if(!h)return;cropPreview.held=null;h.spacer.remove();s.style.position=s.style.top=s.style.left=s.style.width=s.style.zIndex=s.style.margin='';};
+      // The cart button is not lost at the end of the card (d), where the preview would let go and leave the screen with the button under it.
+      // From that point the whole card is fixed to the screen where it stands, so the preview and the Add to cart button stay at the top
+      // while the space under the lab scrolls by. A spacer keeps the card's place in the page. It is not held forever (d): when the end of
+      // the lab's own page area (the footer) comes up to the card, the card goes back into the page, set down by a constant amount, and
+      // scrolls away ahead of the footer. Fixed, then constant: the script never moves it scroll by scroll, so it cannot slip on a fast flick.
+      const free=()=>{const h=cropPreview.held;cropPreview.held=null;if(h&&h.spacer)h.spacer.remove();if(h)s.style.position=s.style.top=s.style.left=s.style.width=s.style.zIndex=s.style.margin=s.style.transform='';};
       if(getComputedStyle(w).position!=='sticky'){cancelAnimationFrame(cropPreview.raf);cropPreview.raf=0;cropPreview.cur=0;free();return clear();}
       // It is measured after every change to the preview's size (below), never before.
       // `d` is how far down the card the preview sits when it has reached the end of it, worked out from the sizes themselves (so it is
       // right even in the middle of a resize): the card's height, less the preview's height and the room kept under it.
       const settle=()=>{const stick=parseFloat(getComputedStyle(w).top)||0,h=cropPreview.held,r=s.getBoundingClientRect(),d=r.height-w.getBoundingClientRect().height-(parseFloat(w.style.marginBottom)||0);
-        if(h){const at=h.spacer.getBoundingClientRect();if(at.top+d>=stick-.5||Math.abs(at.width-r.width)>1)return free();h.spacer.style.height=r.height+'px';s.style.top=(stick-d)+'px';s.style.left=at.left+'px';return;}
-        if(r.top+d>=stick-.5)return;
-        const spacer=document.createElement('div');spacer.style.cssText='height:'+r.height+'px;margin:'+getComputedStyle(s).margin;s.after(spacer);
-        cropPreview.held={spacer};s.style.position='fixed';s.style.margin='0';s.style.width=r.width+'px';s.style.left=r.left+'px';s.style.top=(stick-d)+'px';s.style.zIndex='5';};
+        // where the card would be if nothing held it, and where the lab's page area ends (24px is kept between the card and what follows)
+        const host=s.getRootNode().host,area=host&&host.parentElement,limit=area?area.getBoundingClientRect().bottom-24:Infinity;
+        const at=h&&h.spacer?h.spacer.getBoundingClientRect():null,nTop=at?at.top:h?r.top-h.k:r.top,nLeft=at?at.left:r.left;
+        if(nTop+d>=stick-.5||(at&&Math.abs(at.width-r.width)>1))return free();
+        if(limit-r.height>=stick-d){ // held: fixed to the screen
+          if(!at){free();const spacer=document.createElement('div');spacer.style.cssText='height:'+r.height+'px;margin:'+getComputedStyle(s).margin;s.after(spacer);cropPreview.held={spacer};s.style.position='fixed';s.style.margin='0';s.style.width=r.width+'px';s.style.zIndex='5';}
+          else h.spacer.style.height=r.height+'px';
+          s.style.left=nLeft+'px';s.style.top=(stick-d)+'px';return;}
+        // pushed on by the end of the lab's area: back in the page, a constant distance below its own place
+        const k=limit-(nTop+r.height);if(at||!h){free();cropPreview.held={k:0};s.style.position='relative';s.style.zIndex='5';}
+        if(Math.abs(k-cropPreview.held.k)>.5){cropPreview.held.k=k;s.style.transform='translateY('+k.toFixed(1)+'px)';}};
       const past=w.getBoundingClientRect().top-s.getBoundingClientRect().top;
       const width=wrap.clientWidth,k=width/W,full=k*H;let rest=+wrap.dataset.rest||0;if(!wrap.style.height||wrap.dataset.restW!==String(width)){const keep=wrap.style.height;wrap.style.height='';rest=wrap.clientHeight;wrap.style.height=keep;wrap.dataset.rest=rest;wrap.dataset.restW=width;}
       const box=letterBox(),tall=k*state.zoom*box.h,mid=k*(H/2+state.panY+state.zoom*(box.y-H/2)),band=Math.round(rest*.64),room=rest-band; // one fixed height when pinned (d): it does not change with what is typed. The stitching is still centred in it.
