@@ -1278,6 +1278,25 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       const cur=cropPreview.cur||0;cropPreview.put=put;cropPreview.goal=goal;
       if(!cropPreview.raf&&Math.abs(goal-cur)<=28){cropPreview.cur=goal;return put(goal);}
       if(!cropPreview.raf){const step=()=>{const d=cropPreview.goal-cropPreview.cur;if(Math.abs(d)<1){cropPreview.cur=cropPreview.goal;cropPreview.raf=0;}else{cropPreview.cur+=d*.2;cropPreview.raf=requestAnimationFrame(step);}cropPreview.put(cropPreview.cur);};cropPreview.raf=requestAnimationFrame(step);}}
+    // What goes with each uploaded snapshot (d): the design, the page, the device and what the shop knows. The upload server saves it as a
+    // private text file named after the image. Nothing here is looked up or waited for: it is all already in the browser.
+    // The cart id, Shopify's visitor id and a signed-in customer's id and email are personal data, so they are left out when the shopper
+    // has refused tracking in the cookie banner (`consent` says which it was). It can never break an upload: any error gives a stub.
+    function uploadMeta(){try{
+      const ds=typeof MOUNT!=='undefined'&&MOUNT.dataset?MOUNT.dataset:{},cookie=n=>{const m=document.cookie.match(new RegExp('(?:^|; )'+n+'=([^;]*)'));return m?decodeURIComponent(m[1]):'';};
+      const S=window.Shopify||{},cp=S.customerPrivacy,ok=!(cp&&typeof cp.analyticsProcessingAllowed==='function'&&cp.analyticsProcessingAllowed()===false);
+      let item='';try{item=embed.mode==='product'?(embed.title||ds.title||''):product.name;}catch(e){}
+      let handle='';try{handle=embed.mode==='lab'?labHandle():(embed.product||'');}catch(e){}
+      const n=letters(state.text),q=new URLSearchParams(location.search),utm={};['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(k=>{if(q.get(k))utm[k]=q.get(k);});
+      const m={v:1,
+        design:{text:state.text,letters:n,font:fonts[state.font].name,thread:threads[state.thread].name,colour:fabrics[state.fabric].name,item,handle,embroideryPrice:n*PRICE_PER_LETTER},
+        page:{mode:embed.mode,host:location.host,path:location.pathname,referrer:document.referrer||''},
+        device:{language:navigator.language||'',timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',screen:screen.width+'x'+screen.height,viewport:innerWidth+'x'+innerHeight,pixelRatio:window.devicePixelRatio||1,touch:navigator.maxTouchPoints>0,userAgent:navigator.userAgent},
+        shop:{country:S.country||'',currency:(S.currency&&S.currency.active)||'',signedIn:!!ds.customerId},
+        consent:ok};
+      if(Object.keys(utm).length)m.page.utm=utm;
+      if(ok){m.shop.cart=cookie('cart').split('?')[0];m.shop.visitor=cookie('_shopify_y');if(ds.customerId)m.customer={id:ds.customerId,email:ds.customerEmail||'',orders:ds.customerOrders||''};}
+      return m;}catch(e){return{v:1,error:String(e)};}}
     // Add to cart (or Save) with nothing typed: a gentle nudge in the same bubble. The cursor goes to the box, which gives a small wiggle.
     function askName(){const field=root.querySelector('.text-field'),tip=$('goneTip'),input=$('name'),row=root.querySelector('label[for=name]');if(!field||!tip||!input){toast('Type a name first.');return;}
       const few=MAX_LETTERS<=3;tip.querySelector('b').textContent=few?'What initials should we embroider?':'What name should we embroider?';$('goneWhy').textContent=few?'Type them here and watch them stitch.':'Type it here and watch it stitch.';
@@ -1363,7 +1382,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Resolves true when the file is up; false on failure or after 8 s, so a slow upload never blocks the sale.
     // Card thumbnail: a tight crop around the lettering (2.2:1, same as the card's image box), so the name reads at a glance.
     function thumbJpeg(){return cropJpeg(600,273,.86);}
-    async function uploadSnapshot(id){const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);try{const r=await fetch(UPLOAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:snapshotJpeg(),fileName:id+'.jpg'}),signal:ctl.signal});if(!r.ok)throw new Error(r.status);return true;}catch(e){console.error('Threadwork: snapshot upload failed',e);return false;}finally{clearTimeout(timer);}}
+    async function uploadSnapshot(id){const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);try{const r=await fetch(UPLOAD_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:snapshotJpeg(),fileName:id+'.jpg',meta:uploadMeta()}),signal:ctl.signal});if(!r.ok)throw new Error(r.status);return true;}catch(e){console.error('Threadwork: snapshot upload failed',e);return false;}finally{clearTimeout(timer);}}
     const cartButton=$('download');
     const setBusy=(on,btn=cartButton)=>{btn.disabled=on;btn.setAttribute('aria-busy',String(on));btn.innerHTML=on?'Adding to cart <span class="tw-spin" aria-hidden="true"></span>':(btn.dataset.idle||'Add to Cart');};
     async function addToCart(btn=cartButton,withEmbroidery=true){
