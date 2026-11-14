@@ -1218,6 +1218,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     function spaceSwatches(){const row=$('fabrics'),box=$('threads'),th=box?[...box.children]:[];if(!row||th.length<2)return;const vis=[...row.children].filter(b=>!b.hidden);if(!vis.length)return;
       const first=th[0].getBoundingClientRect();if(!first.width)return;const per=th.filter(b=>Math.abs(b.getBoundingClientRect().top-first.top)<2).length,step=per>1?th[1].getBoundingClientRect().left-first.left:0,inset=Math.max(0,first.left-box.getBoundingClientRect().left);
       row.style.paddingLeft=row.style.paddingRight=inset+'px';
+      // When the threads sit far apart across the row, their two rows get a touch more room between them too, so the spacing does not look lopsided (d). Never less than the stylesheet's own gap, never more than 22px.
+      if(!box.dataset.rowGap)box.dataset.rowGap=String(parseFloat(getComputedStyle(box).rowGap)||12);box.style.rowGap=(per<th.length?Math.max(+box.dataset.rowGap,Math.min(22,Math.round((step-first.width)*.4))):+box.dataset.rowGap)+'px';
       if(step>0&&vis.length<=per){row.style.justifyContent='flex-start';row.style.gap=Math.max(4,step-vis[0].offsetWidth)+'px';}else{row.style.justifyContent='space-between';row.style.gap='4px';}}
     // Add to cart (or Save) with nothing typed: a gentle nudge in the same bubble. The cursor goes to the box, which gives a small wiggle.
     function askName(){const field=root.querySelector('.text-field'),tip=$('goneTip'),input=$('name'),row=root.querySelector('label[for=name]');if(!field||!tip||!input){toast('Type a name first.');return;}
