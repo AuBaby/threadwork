@@ -1229,7 +1229,12 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Zoomed in far enough that the stitching fills the preview, there is nothing to crop. The zoom buttons fade out while it is cropped.
     function cropPreview(){const w=root.querySelector('.workspace'),s=root.querySelector('.studio'),wrap=$('canvaswrap'),scene=$('scene'),side=root.querySelector('aside'),btn=$('download');if(!w||!s||!wrap||!scene||!side)return;
       const clear=()=>{if(wrap.style.height||w.style.marginBottom){wrap.style.height=wrap.style.flex=w.style.marginBottom=scene.style.objectPosition=side.style.marginTop='';}w.classList.remove('cropped');};
-      if(getComputedStyle(w).position!=='sticky'){cancelAnimationFrame(cropPreview.raf);cropPreview.raf=0;cropPreview.cur=0;return clear();}
+      const hold=y=>{if(y===(cropPreview.ty||0))return;cropPreview.ty=y;s.style.transform=y?'translateY('+y.toFixed(1)+'px)':'';s.style.position=y?'relative':'';s.style.zIndex=y?'5':'';};
+      if(getComputedStyle(w).position!=='sticky'){cancelAnimationFrame(cropPreview.raf);cropPreview.raf=0;cropPreview.cur=0;hold(0);return clear();}
+      // The cart button is never lost (d): at the end of the card the preview would let go and leave the screen with the button under it.
+      // Instead the card is held where it is (moved down by exactly what the page scrolled past that point), so the preview and the
+      // Add to cart button stay at the top of the screen while the rest of the page (the footer) scrolls on underneath.
+      {const top=w.getBoundingClientRect().top-(cropPreview.ty||0),stick=parseFloat(getComputedStyle(w).top)||0;hold(Math.max(0,stick-top)<.5?0:stick-top);}
       const past=w.getBoundingClientRect().top-s.getBoundingClientRect().top;
       const width=wrap.clientWidth,k=width/W,full=k*H;let rest=+wrap.dataset.rest||0;if(!wrap.style.height||wrap.dataset.restW!==String(width)){const keep=wrap.style.height;wrap.style.height='';rest=wrap.clientHeight;wrap.style.height=keep;wrap.dataset.rest=rest;wrap.dataset.restW=width;}
       const box=letterBox(),tall=k*state.zoom*box.h,mid=k*(H/2+state.panY+state.zoom*(box.y-H/2)),band=Math.round(rest*.64),room=rest-band; // one fixed height when pinned (d): it does not change with what is typed. The stitching is still centred in it.
@@ -1278,7 +1283,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // How tall the preview is, for the phone layout where it sticks to the top (see the stylesheet).
     {const sizePreview=()=>{const w=root.querySelector('.workspace');if(w&&w.offsetHeight)shell.style.setProperty('--tw-preview-h',w.offsetHeight+'px');};sizePreview();addEventListener('resize',sizePreview);document.fonts.ready.then(sizePreview);
       // Pinned = the preview is sticking and the card has scrolled up behind it.
-      const pin=()=>{const w=root.querySelector('.workspace'),s=root.querySelector('.studio');if(!w||!s)return;w.classList.toggle('pinned',getComputedStyle(w).position==='sticky'&&s.getBoundingClientRect().top<w.getBoundingClientRect().top-2);};const both=()=>{pin();cropPreview();};addEventListener('scroll',both,{passive:true});addEventListener('resize',both);both();
+      const pin=()=>{const w=root.querySelector('.workspace'),s=root.querySelector('.studio');if(!w||!s)return;w.classList.toggle('pinned',getComputedStyle(w).position==='sticky'&&s.getBoundingClientRect().top<w.getBoundingClientRect().top-2);};const both=()=>{pin();cropPreview();requestAnimationFrame(cropPreview);};addEventListener('scroll',both,{passive:true});addEventListener('resize',both);both();
       // iOS moves the page when the keyboard opens or closes without always saying it scrolled, so the preview is also checked then.
       if(window.visualViewport){visualViewport.addEventListener('resize',both);visualViewport.addEventListener('scroll',both);}
       const later=()=>[60,250,500].forEach(ms=>setTimeout(both,ms));root.addEventListener('focusin',later);root.addEventListener('focusout',later);}
