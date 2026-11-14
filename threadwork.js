@@ -1237,7 +1237,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // Where the pinning ends (d): the preview lets go when the cart button arrives just under it, so the two leave the screen together
       // and the preview never slides over the button. A sticky box lets go when its bottom margin meets the end of the card, so the margin
       // is made as tall as the button's part of the panel, and the panel is pulled back up by the same amount (nothing moves).
-      const end=btn&&past>=1?Math.max(0,s.getBoundingClientRect().bottom-btn.getBoundingClientRect().top+24):0;
+      // The space kept above the button is at most 24px, and never reaches up into what sits above it: a selected thread on the bottom
+      // row has a ring around it, which showed as a sliver under the preview (d).
+      let lead=24;if(btn){const top=btn.getBoundingClientRect().top,above=Math.max(...[...btn.parentElement.children].filter(e=>e!==btn&&e.offsetHeight).map(e=>e.getBoundingClientRect().bottom).filter(b=>b<=top+1));if(isFinite(above))lead=Math.max(4,Math.min(24,top-above-7));}
+      const end=btn&&past>=1?Math.max(0,s.getBoundingClientRect().bottom-btn.getBoundingClientRect().top+lead):0;
       // Every value is set together from one number (how much is cropped), so the panel below never moves.
       const put=c=>{if(c<.5&&!end)return clear();const mb=Math.max(c,end),off=from+(to-from)*(room>0?c/room:0);
         wrap.style.flex='none';wrap.style.height=(rest-c)+'px';w.style.marginBottom=mb+'px';side.style.marginTop=(-10-(mb-c))+'px';
