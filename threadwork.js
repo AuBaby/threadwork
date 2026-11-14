@@ -1229,7 +1229,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Zoomed in far enough that the stitching fills the preview, there is nothing to crop. The zoom buttons fade out while it is cropped.
     function cropPreview(){const w=root.querySelector('.workspace'),s=root.querySelector('.studio'),wrap=$('canvaswrap'),scene=$('scene');if(!w||!s||!wrap||!scene)return;
       const clear=()=>{if(wrap.style.height){wrap.style.height=wrap.style.flex=w.style.marginBottom=scene.style.objectPosition='';}w.classList.remove('cropped');};
-      if(getComputedStyle(w).position!=='sticky'||!geometry)return clear();
+      if(getComputedStyle(w).position!=='sticky')return clear();
       const past=w.getBoundingClientRect().top-s.getBoundingClientRect().top;if(past<1)return clear();
       const width=wrap.clientWidth,k=width/W,full=k*H;let rest=+wrap.dataset.rest||0;if(!wrap.style.height||wrap.dataset.restW!==String(width)){const keep=wrap.style.height;wrap.style.height='';rest=wrap.clientHeight;wrap.style.height=keep;wrap.dataset.rest=rest;wrap.dataset.restW=width;}
       const box=letterBox(),tall=k*state.zoom*box.h,mid=k*(H/2+state.panY+state.zoom*(box.y-H/2)),band=Math.min(rest,Math.max(104,Math.round(tall+64))),room=rest-band;if(room<8)return clear();
