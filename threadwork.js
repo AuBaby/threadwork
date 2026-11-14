@@ -1168,6 +1168,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       'Adult Beanie|Pink Haze':ASSETS+'products/adult-beanie-pink-haze.webp','Adult Beanie|Chocolate':ASSETS+'products/adult-beanie-chocolate.webp',
       'Adult Beanie|Lavande':ASSETS+'products/adult-beanie-lavande.webp'
     };
+    // The colour each item shows in the menu, and starts on when the colour in hand is not one of its own (d). The rest start on their first.
+    const START_COLOUR={'The Popcorn Blanket':'Sky Blue','Adult Popcorn Blanket':'Moon Stone','Little Love Blanket':'Lavande','Cashmere Cloud Gift Set':'Butter Cream','Adult Beanie':'Pink Haze'},startOf=p=>p.colors.includes(START_COLOUR[p.name])?START_COLOUR[p.name]:p.colors[0];
     let product=PRODUCTS[0];
     // On the store's lab page each item and colour is a product of its own; this is its handle (aubabyshop.com/products/<handle>).
     const LAB_HANDLE={
@@ -1239,8 +1241,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       setMax(p.max,/adult/i.test(p.name));const had=letters(state.text),base=kept&&state.text===kept.to?kept.from:state.text;let next=letters(base)>p.max?[...clean(base)].slice(0,p.max).join(''):base;if(p.max<=3)next=next.toUpperCase();
       kept=next!==base?{from:base,to:next}:null;if(next!==state.text){state.text=next;$('name').value=next;}
       tellGone(had>p.max&&p.max<=3?p:null);
-      // The colour carries over by name: Sky Blue on the Sawa stays Sky Blue on the Popcorn. An item without that colour starts on its first.
-      if(!shown.includes(state.fabric)&&shown.length){const same=p.colors.findIndex(c=>fabricIndex(fabrics[state.fabric].line,c)===state.fabric);state.fabric=same>=0&&at[same]>=0?at[same]:shown[0];ensureTexture(fabrics[state.fabric]).then(()=>{drawCloth();requestRender();});}
+      // The colour carries over by name: Sky Blue on the Sawa stays Sky Blue on the Popcorn. An item without that colour starts on its own starting colour.
+      if(!shown.includes(state.fabric)&&shown.length){const same=p.colors.findIndex(c=>fabricIndex(fabrics[state.fabric].line,c)===state.fabric);{const start=at[p.colors.indexOf(startOf(p))];state.fabric=same>=0&&at[same]>=0?at[same]:start>=0?start:shown[0];}ensureTexture(fabrics[state.fabric]).then(()=>{drawCloth();requestRender();});}
       paintTotal.on=true;updateControls();updatePick();spaceSwatches();if(ready){makeGeometry();requestRender();}
     }
     // The tip under the text box goes away on the next edit, click or Escape, in every mode.
@@ -1253,7 +1255,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     if(embed.mode!=='product'){const menu=$('productMenu'),btn=$('productButton');
       const setOpen=on=>{menu.hidden=!on;btn.setAttribute('aria-expanded',String(on));};
       PRODUCTS.forEach(p=>{const r=document.createElement('button');r.type='button';r.className='pick-row';r.setAttribute('role','menuitemradio');r.setAttribute('aria-checked','false');
-        const im=document.createElement('img');im.alt='';im.src=PHOTOS[p.name+'|'+p.colors[0]]||'';const text=document.createElement('span'),name=document.createElement('b'),cap=document.createElement('small');
+        const im=document.createElement('img');im.alt='';im.src=PHOTOS[p.name+'|'+startOf(p)]||'';const text=document.createElement('span'),name=document.createElement('b'),cap=document.createElement('small');
         name.textContent=p.name;cap.textContent=(p.max<=3?'Initials':'Names')+', up to '+p.max+' letters';text.append(name,cap);r.append(im,text);r.insertAdjacentHTML('beforeend','<svg viewBox="0 0 12 9" aria-hidden="true"><path d="M1 4.6l3.4 3.2L11 1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>');
         r.addEventListener('click',()=>{applyProduct(p);setOpen(false);btn.focus();});menu.append(r);});
       btn.addEventListener('click',()=>setOpen(menu.hidden));
