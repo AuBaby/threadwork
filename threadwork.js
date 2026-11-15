@@ -1446,7 +1446,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
           clearTimeout(debounce);cancelAnimationFrame(raf);makeGeometry();renderArtwork();
           uploaded=uploadSnapshot(id);
           body.append('items[0][properties][_image]',image);
-          body.append('items[1][id]',embroideryId);body.append('items[1][quantity]',qty);
+          body.append('items[1][id]',embroideryId);body.append('items[1][quantity]',qty);body.append('items[1][parent_id]',variantId);
           body.append('items[1][properties][_for]',title);body.append('items[1][properties][_link]',link);
           body.append('items[1][properties][Embroidery Text]',text);body.append('items[1][properties][Thread Color]',threads[state.thread].name);body.append('items[1][properties][Font]',fonts[state.font].name);
           body.append('items[1][properties][_image]',image);body.append('items[1][properties][_flow]',FLOW);
