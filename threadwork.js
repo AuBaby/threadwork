@@ -1311,6 +1311,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         if(vis)m.visit={firstSeen:vis.first||'',visits:vis.visits||1,designsBefore:vis.designs||0,firstLanding:vis.firstLanding||null,landing:vis.landing||null,clicks:vis.clicks||null,utm:vis.utm||null};
         // Klaviyo keeps its own id for a visitor in a cookie; for someone who gave their email on this device (the newsletter), the email can be in it too.
         try{const k=cookie('__kla_id');if(k){const j=JSON.parse(atob(k)),email=j.email||j.$email||'';if(email||j.$exchange_id)m.klaviyo={email,exchange:j.$exchange_id||''};}}catch(e){}}
+      // A test upload says who made it (d): Claude's test browser sets tw_added_by, and ?tw_by=Name in the address does the same by hand.
+      // The gallery shows it as "Added by Claude", so tests are never mistaken for shoppers.
+      try{const by=q.get('tw_by')||localStorage.getItem('tw_added_by')||'';if(by)m.addedBy=String(by).slice(0,40);}catch(e){}
+      if(navigator.webdriver)m.automated=true;
       try{if(vis){vis.designs=(vis.designs||0)+1;localStorage.setItem('tw_visit',JSON.stringify(vis));}}catch(e){}
       // the next design starts its own journey, and the cart is read again once this add has landed
       journey.t0=0;journey.edits=0;journey.names=[];journey.fonts.clear();journey.threads.clear();journey.colours.clear();journey.items.clear();setTimeout(cartPeek,4000);
