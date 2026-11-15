@@ -1173,7 +1173,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     let product=PRODUCTS[0];
     // On the store's lab page each item and colour is a product of its own; this is its handle (aubabyshop.com/products/<handle>).
     const LAB_HANDLE={
-      'The Sawa Blanket|Pink Quartz':'copy-of-the-sawa-pink-quartz','The Sawa Blanket|Henna':'the-sawa-blanket',
+      'The Sawa Blanket|Pink Quartz':'the-sawa-pink-quartz','The Sawa Blanket|Henna':'the-sawa-blanket',
       'The Sawa Blanket|Moon Stone':'the-sawa-moon-stone','The Sawa Blanket|Sky Blue':'the-sawa-sky-blue',
       'The Sawa Blanket|Citron':'the-sawa-citron','The Popcorn Blanket|Pink Quartz':'the-popcorn-pink-quartz',
       'The Popcorn Blanket|Henna':'the-popcorn-blanket','The Popcorn Blanket|Moon Stone':'the-popcorn-moon-stone',
@@ -1282,21 +1282,39 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // private text file named after the image. Nothing here is looked up or waited for: it is all already in the browser.
     // The cart id, Shopify's visitor id and a signed-in customer's id and email are personal data, so they are left out when the shopper
     // has refused tracking in the cookie banner (`consent` says which it was). It can never break an upload: any error gives a stub.
+    // Kept while the studio is open: how the design came about (time spent, earlier names, what was tried) and what was in the cart.
+    const journey={t0:0,edits:0,names:[],fonts:new Set(),threads:new Set(),colours:new Set(),items:new Set()};let cartSnap=null,nameTimer=0;
+    function journeyNote(){try{if(!journey.t0)journey.t0=Date.now();journey.fonts.add(fonts[state.font].name);journey.threads.add(threads[state.thread].name);journey.colours.add(fabrics[state.fabric].name);try{journey.items.add(product.name);}catch(e){}}catch(e){}}
+    // The cart as it stands, read quietly in the background (never during the add itself), so the snapshot can say what else was in it.
+    function cartPeek(){if(embed.mode==='studio'||cartPeek.busy)return;cartPeek.busy=true;fetch('/cart.js',{credentials:'same-origin'}).then(r=>r.ok?r.json():null).then(c=>{if(c)cartSnap={count:c.item_count,total:c.total_price/100,currency:c.currency,items:(c.items||[]).slice(0,8).map(i=>({title:i.product_title,variant:i.variant_title||'',qty:i.quantity,price:i.final_line_price/100}))};}).catch(()=>{}).then(()=>{cartPeek.busy=false;});}
     function uploadMeta(){try{
       const ds=typeof MOUNT!=='undefined'&&MOUNT.dataset?MOUNT.dataset:{},cookie=n=>{const m=document.cookie.match(new RegExp('(?:^|; )'+n+'=([^;]*)'));return m?decodeURIComponent(m[1]):'';};
       const S=window.Shopify||{},cp=S.customerPrivacy,ok=!(cp&&typeof cp.analyticsProcessingAllowed==='function'&&cp.analyticsProcessingAllowed()===false);
       let item='';try{item=embed.mode==='product'?(embed.title||ds.title||''):product.name;}catch(e){}
       let handle='';try{handle=embed.mode==='lab'?labHandle():(embed.product||'');}catch(e){}
       const n=letters(state.text),q=new URLSearchParams(location.search),utm={};['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(k=>{if(q.get(k))utm[k]=q.get(k);});
-      const m={v:1,
+      const ua=navigator.userAgent,inApp=/Instagram/.test(ua)?'Instagram':/FBAN|FBAV/.test(ua)?'Facebook':/TikTok|musical_ly|Bytedance/i.test(ua)?'TikTok':/Pinterest/.test(ua)?'Pinterest':'';
+      journeyNote();const now=state.text.trim();
+      const m={v:2,
         design:{text:state.text,letters:n,font:fonts[state.font].name,thread:threads[state.thread].name,colour:fabrics[state.fabric].name,item,handle,embroideryPrice:n*PRICE_PER_LETTER},
+        journey:{seconds:Math.round((Date.now()-journey.t0)/1000),edits:journey.edits,earlierNames:journey.names.filter(v=>v!==now),fontsTried:[...journey.fonts],threadsTried:[...journey.threads],coloursTried:[...journey.colours],itemsTried:[...journey.items]},
         page:{mode:embed.mode,host:location.host,path:location.pathname,referrer:document.referrer||''},
-        device:{language:navigator.language||'',timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',screen:screen.width+'x'+screen.height,viewport:innerWidth+'x'+innerHeight,pixelRatio:window.devicePixelRatio||1,touch:navigator.maxTouchPoints>0,userAgent:navigator.userAgent},
+        device:{language:navigator.language||'',timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'',screen:screen.width+'x'+screen.height,viewport:innerWidth+'x'+innerHeight,pixelRatio:window.devicePixelRatio||1,touch:navigator.maxTouchPoints>0,
+          connection:(navigator.connection&&navigator.connection.effectiveType)||'',darkMode:!!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches),inApp,userAgent:ua},
         shop:{country:S.country||'',currency:(S.currency&&S.currency.active)||'',signedIn:!!ds.customerId},
         consent:ok};
       if(Object.keys(utm).length)m.page.utm=utm;
-      if(ok){m.shop.cart=cookie('cart').split('?')[0];m.shop.visitor=cookie('_shopify_y');if(ds.customerId)m.customer={id:ds.customerId,email:ds.customerEmail||'',orders:ds.customerOrders||''};}
-      return m;}catch(e){return{v:1,error:String(e)};}}
+      if(cartSnap)m.cart=cartSnap;
+      // The visit (kept by a small script on every page of the shop: first landing page, this visit's landing page, ad clicks, visit count).
+      let vis=null;try{vis=JSON.parse(localStorage.getItem('tw_visit')||'null');}catch(e){}
+      if(ok){m.shop.cart=cookie('cart').split('?')[0];m.shop.visitor=cookie('_shopify_y');if(ds.customerId)m.customer={id:ds.customerId,email:ds.customerEmail||'',orders:ds.customerOrders||''};
+        if(vis)m.visit={firstSeen:vis.first||'',visits:vis.visits||1,designsBefore:vis.designs||0,firstLanding:vis.firstLanding||null,landing:vis.landing||null,clicks:vis.clicks||null,utm:vis.utm||null};
+        // Klaviyo keeps its own id for a visitor in a cookie; for someone who gave their email on this device (the newsletter), the email can be in it too.
+        try{const k=cookie('__kla_id');if(k){const j=JSON.parse(atob(k)),email=j.email||j.$email||'';if(email||j.$exchange_id)m.klaviyo={email,exchange:j.$exchange_id||''};}}catch(e){}}
+      try{if(vis){vis.designs=(vis.designs||0)+1;localStorage.setItem('tw_visit',JSON.stringify(vis));}}catch(e){}
+      // the next design starts its own journey, and the cart is read again once this add has landed
+      journey.t0=0;journey.edits=0;journey.names=[];journey.fonts.clear();journey.threads.clear();journey.colours.clear();journey.items.clear();setTimeout(cartPeek,4000);
+      return m;}catch(e){return{v:2,error:String(e)};}}
     // Add to cart (or Save) with nothing typed: a gentle nudge in the same bubble. The cursor goes to the box, which gives a small wiggle.
     function askName(){const field=root.querySelector('.text-field'),tip=$('goneTip'),input=$('name'),row=root.querySelector('label[for=name]');if(!field||!tip||!input){toast('Type a name first.');return;}
       const few=MAX_LETTERS<=3;tip.querySelector('b').textContent=few?'What initials should we embroider?':'What name should we embroider?';$('goneWhy').textContent=few?'Type them here and watch them stitch.':'Type it here and watch it stitch.';
@@ -1320,6 +1338,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       paintTotal.on=true;updateControls();updatePick();spaceSwatches();if(ready){makeGeometry();requestRender();}
     }
     {const a=$('productLink');if(a){['pointerdown','mouseenter','focus','click','contextmenu'].forEach(ev=>a.addEventListener(ev,()=>{const u=productUrl();if(u)a.href=u;}));addEventListener('resize',placeLink);document.fonts.ready.then(placeLink);}}
+    // The journey: what is on screen is noted after every click, a name counts once it has stood for a moment, and the cart is read once in the background.
+    root.addEventListener('click',()=>setTimeout(journeyNote,0));
+    $('name').addEventListener('input',()=>{journeyNote();journey.edits++;clearTimeout(nameTimer);nameTimer=setTimeout(()=>{const v=state.text.trim();if(v&&journey.names[journey.names.length-1]!==v){journey.names.push(v);if(journey.names.length>6)journey.names.shift();}},1500);if(!cartSnap)cartPeek();});
+    if(embed.mode!=='studio'){if(window.requestIdleCallback)requestIdleCallback(cartPeek,{timeout:4000});else setTimeout(cartPeek,1500);}
     // The tip under the text box goes away on the next edit, click or Escape, in every mode.
     $('name').addEventListener('input',()=>{kept=null;tellGone(null);});document.addEventListener('click',()=>{if(goneFresh)goneFresh=false;else tellGone(null);});root.addEventListener('keydown',e=>{if(e.key==='Escape')tellGone(null);});
     // How tall the preview is, for the phone layout where it sticks to the top (see the stylesheet).
