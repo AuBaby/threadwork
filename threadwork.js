@@ -1346,6 +1346,16 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     root.addEventListener('click',()=>setTimeout(journeyNote,0));
     $('name').addEventListener('input',()=>{journeyNote();journey.edits++;clearTimeout(nameTimer);nameTimer=setTimeout(()=>{const v=state.text.trim();if(v&&journey.names[journey.names.length-1]!==v){journey.names.push(v);if(journey.names.length>6)journey.names.shift();}},1500);if(!cartSnap)cartPeek();});
     if(embed.mode!=='studio'){if(window.requestIdleCallback)requestIdleCallback(cartPeek,{timeout:4000});else setTimeout(cartPeek,1500);}
+    // A product page with an embroidery saved on it (d): choosing another colour of the same item takes the embroidery along. The colour
+    // swatches (the Swatch King app) each carry the other product's address in a `swatch-url` attribute; the click is taken over here and
+    // the page goes to that address with the text, font and thread in it, which the next page reads to show the same embroidery.
+    // Without a saved embroidery the app handles the click itself, as before.
+    if(embed.mode==='product')document.addEventListener('click',e=>{try{
+      if(!saved||!saved.text||!e.target.closest)return;const hit=e.target.closest('.swatches-type-products .swatch-view-item, .swatches-type-products [swatch-url]');if(!hit)return;
+      const holder=hit.matches('[swatch-url]')?hit:hit.querySelector('[swatch-url]'),url=holder&&holder.getAttribute('swatch-url');if(!url)return;
+      const dest=new URL(url,location.origin),last=s=>s.replace(/[/]+$/,'').split('/').pop();if(dest.origin!==location.origin||last(dest.pathname)===last(location.pathname))return;
+      dest.searchParams.set('tw_text',saved.text);dest.searchParams.set('tw_font',fonts[saved.font].name);dest.searchParams.set('tw_thread',threads[saved.thread].name);
+      e.preventDefault();e.stopImmediatePropagation();location.href=dest.href;}catch(err){}},true);
     // The tip under the text box goes away on the next edit, click or Escape, in every mode.
     $('name').addEventListener('input',()=>{kept=null;tellGone(null);});document.addEventListener('click',()=>{if(goneFresh)goneFresh=false;else tellGone(null);});root.addEventListener('keydown',e=>{if(e.key==='Escape')tellGone(null);});
     // How tall the preview is, for the phone layout where it sticks to the top (see the stylesheet).
