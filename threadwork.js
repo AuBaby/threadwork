@@ -77,7 +77,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       { name:'Peony', aka:['Peony Pink'], hex:'#d1b6b2', texture:ASSETS+'fabrics/littlelove-peony.webp', pure:true, lift:0, sharpen:.7, lane:{pitch:208.333,centre:104.167}, scale:1, line:'cashmere' },
       // Kid + Adult beanies (rib photos, placeholder). `turn` draws the photo rotated 180 degrees: as shot, the rib knit read upside down.
             { name:'Charcoal', hex:'#29282e', texture:ASSETS+'fabrics/beanie-charcoal-knit.webp', whole:true, turn:true, wash:false, lift:.05, marl:.34, fleck:{density:.008,len:18,width:4,gain:50,lean:4,soft:2,rib:1.3}, scale:.5, line:'beanie' },
-      { name:'Cobalt', hex:'#172b9a', texture:ASSETS+'fabrics/beanie-cobalt-knit.webp', whole:true, turn:true, wash:false, lift:.1, scale:.5, line:'beanie' }, { name:'Lavande', hex:'#b9a2cf', texture:ASSETS+'fabrics/beanie-lavande-knit.webp', whole:true, turn:true, scale:.5, line:'beanie' },
+      { name:'Cobalt', hex:'#1c2f8a', texture:ASSETS+'fabrics/beanie-cobalt-knit.webp', whole:true, turn:true, wash:false, lift:0, deep:1.3, veil:0, fibre:.4, scale:.5, line:'beanie' }, { name:'Lavande', hex:'#b9a2cf', texture:ASSETS+'fabrics/beanie-lavande-knit.webp', whole:true, turn:true, scale:.5, line:'beanie' },
       { name:'Pink Haze', hex:'#ce8085', texture:ASSETS+'fabrics/beanie-pink-haze-knit.webp', whole:true, turn:true, marl:.1, scale:.5, line:'beanie' },
       // Added last, not beside the other beanies, so every earlier fabric keeps its place in the list.
       { name:'Chocolate', hex:'#53271a', texture:ASSETS+'fabrics/beanie-chocolate-knit.webp', whole:true, turn:true, wash:false, lift:.1, scale:.5, line:'beanie' }
@@ -182,11 +182,11 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       else if(fabric.pattern&&fabric.lane){const box=letterBox(),s=Math.max(.5,Math.min(2.5,box.h*2.3/fabric.lane.pitch)),target=box.y-box.h*.2,ty=target-fabric.lane.centre*s;clothCtx.save();clothCtx.imageSmoothingQuality='high';clothCtx.translate(0,ty);clothCtx.scale(s,s);clothCtx.fillStyle=fabric.pattern;clothCtx.fillRect(0,-ty/s-fabric.lane.pitch,W/s,H/s+fabric.lane.pitch*2);clothCtx.restore();}
       else if(fabric.pattern){clothCtx.save();clothCtx.scale(fabric.scale,fabric.scale);clothCtx.fillStyle=fabric.pattern;clothCtx.fillRect(0,0,W/fabric.scale,H/fabric.scale);clothCtx.restore();if(!fabric.pure&&fabric.wash!==false){clothCtx.fillStyle=color(base,0,.12);clothCtx.fillRect(0,0,W,H);}}
       
-      let g=null;if(!fabric.pure){g=clothCtx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#fffcdf28');g.addColorStop(.35,'#ffffff10');g.addColorStop(.72,'#1d17200b');g.addColorStop(1,'#2716221f');clothCtx.fillStyle=g;clothCtx.fillRect(0,0,W,H);}
-      if(!fabric.pure){g=clothCtx.createRadialGradient(W*.37,H*.36,50,W*.5,H*.5,W*.7);g.addColorStop(0,'#fffae810');g.addColorStop(1,'#20182518');clothCtx.fillStyle=g;clothCtx.fillRect(0,0,W,H);}
+      let g=null;if(!fabric.pure){g=clothCtx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#fffcdf28');g.addColorStop(.35,'#ffffff10');g.addColorStop(.72,'#1d17200b');g.addColorStop(1,'#2716221f');clothCtx.fillStyle=g;clothCtx.globalAlpha=fabric.veil??1;clothCtx.fillRect(0,0,W,H);clothCtx.globalAlpha=1;}
+      if(!fabric.pure){g=clothCtx.createRadialGradient(W*.37,H*.36,50,W*.5,H*.5,W*.7);g.addColorStop(0,'#fffae810');g.addColorStop(1,'#20182518');clothCtx.fillStyle=g;clothCtx.globalAlpha=fabric.veil??1;clothCtx.fillRect(0,0,W,H);clothCtx.globalAlpha=1;}
       // Fine irregular fibers remove the mechanically perfect tile surface.
       const r=random(8313);clothCtx.lineWidth=.42;
-      if(!fabric.pure)for(let i=0;i<14000;i++){const x=r()*W,y=r()*H;clothCtx.strokeStyle=color(base,r()>.45?62:-48,r()*.2);clothCtx.beginPath();clothCtx.moveTo(x,y);clothCtx.lineTo(x+(r()-.4)*7,y+(r()-.5)*4);clothCtx.stroke();}
+      if(!fabric.pure)for(let i=0;i<14000;i++){const x=r()*W,y=r()*H;clothCtx.strokeStyle=color(base,r()>.45?62:-48,r()*.2*(fabric.fibre??1));clothCtx.beginPath();clothCtx.moveTo(x,y);clothCtx.lineTo(x+(r()-.4)*7,y+(r()-.5)*4);clothCtx.stroke();}
     }
     // Single-stroke masters traced through the actual Pacifico glyphs at
     // 180 px. Explicit pen paths resolve overlapping brush strokes that a
@@ -1520,6 +1520,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       const sum=[0,0,0];for(let i=0;i<px.length;i+=4){sum[0]+=px[i];sum[1]+=px[i+1];sum[2]+=px[i+2];}
       const want=rgb(f.hex),gain=want.map((v,k)=>v/(sum[k]/n));
       for(let i=0;i<px.length;i+=4){px[i]=Math.min(255,px[i]*gain[0]);px[i+1]=Math.min(255,px[i+1]*gain[1]);px[i+2]=Math.min(255,px[i+2]*gain[2]);}
+      // deep: stretch the tile's lights and darks away from its colour (deeper furrows between ribs). Cobalt only so far.
+      if(f.deep){for(let i=0;i<px.length;i+=4)for(let k=0;k<3;k++)px[i+k]=Math.max(0,Math.min(255,want[k]+(px[i+k]-want[k])*f.deep));}
       g.putImageData(d,0,0);
       // A tinted texture shows its own colour in the swatch rather than the original photo's.
       
