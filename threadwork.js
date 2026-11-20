@@ -1338,7 +1338,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       kept=next!==base?{from:base,to:next}:null;if(next!==state.text){state.text=next;$('name').value=next;}
       tellGone(had>p.max&&p.max<=3?p:null);
       // The colour carries over by name: Sky Blue on the Sawa stays Sky Blue on the Popcorn. An item without that colour starts on its own starting colour.
-      if(!shown.includes(state.fabric)&&shown.length){const same=p.colors.findIndex(c=>fabricIndex(fabrics[state.fabric].line,c)===state.fabric);{const start=at[p.colors.indexOf(startOf(p))];state.fabric=same>=0&&at[same]>=0?at[same]:start>=0?start:shown[0];}ensureTexture(fabrics[state.fabric]).then(()=>{drawCloth();requestRender();});}
+      if(!shown.includes(state.fabric)&&shown.length){const same=p.colors.findIndex(c=>fabricIndex(fabrics[state.fabric].line,c)===state.fabric);{const start=at[p.colors.indexOf(startOf(p))];state.fabric=same>=0&&at[same]>=0?at[same]:start>=0?start:shown[0];}/* At start-up (?tw_item=) this runs before ensureTexture exists and before init(), which loads this fabric itself: only reload once the studio is up. */if(ready)ensureTexture(fabrics[state.fabric]).then(()=>{drawCloth();requestRender();});}
       paintTotal.on=true;updateControls();updatePick();spaceSwatches();if(ready){makeGeometry();requestRender();}
     }
     {const a=$('productLink');if(a){['pointerdown','mouseenter','focus','click','contextmenu'].forEach(ev=>a.addEventListener(ev,()=>{const u=productUrl();if(u)a.href=u;}));addEventListener('resize',placeLink);document.fonts.ready.then(placeLink);}}
