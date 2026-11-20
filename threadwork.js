@@ -1378,7 +1378,11 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       addEventListener('resize',()=>{paintTotal();spaceSwatches();});document.fonts.ready.then(()=>{paintTotal();spaceSwatches();});
       // The standalone page and the store's lab page are The Embroidery Lab. A product page's popup keeps "Add Hand Embroidery".
       {const h=root.querySelector('.panel-head h2');if(h){h.textContent='The Embroidery Lab';fitHeading();}}
-      applyProduct(PRODUCTS[0]);}
+      // The lab opens on the first product, unless the address names one: ?tw_item=adult-popcorn-blanket (the product's
+      // name, any case or punctuation). The Embroidery Lab cards in the store's collections use it, so the card in the
+      // beanie collection opens on a beanie and the one in adult blankets on the adult blanket.
+      {const norm=t=>String(t).toLowerCase().replace(/[^a-z]/g,''),want=norm(new URLSearchParams(location.search).get('tw_item')||'');
+        applyProduct(want&&PRODUCTS.find(p=>norm(p.name)===want)||PRODUCTS[0]);}}
     $('name').addEventListener('input',e=>{let v=clean(e.target.value);if(MAX_LETTERS<=3)v=v.toUpperCase();if(v!==e.target.value)e.target.value=v;if(letters(v)>MAX_LETTERS){e.target.value=state.text;return;}state.text=v;updateControls();clearTimeout(debounce);debounce=setTimeout(()=>{makeGeometry();requestRender();},40);});
     for(const key of ['weight','length'])$(key).addEventListener('input',e=>{state[key]=+e.target.value;updateControls();requestRender();});
     $('advanced').addEventListener('click',()=>{state.advanced=!state.advanced;updateControls();});
