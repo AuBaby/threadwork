@@ -80,7 +80,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       { name:'Cobalt', hex:'#1c2f8a', texture:ASSETS+'fabrics/beanie-cobalt-knit.webp', whole:true, turn:true, wash:false, lift:0, deep:1.3, veil:0, fibre:.4, scale:.5, line:'beanie' }, { name:'Lavande', hex:'#b9a2cf', texture:ASSETS+'fabrics/beanie-lavande-knit.webp', whole:true, turn:true, scale:.5, line:'beanie' },
       { name:'Pink Haze', hex:'#ce8085', texture:ASSETS+'fabrics/beanie-pink-haze-knit.webp', whole:true, turn:true, marl:.1, scale:.5, line:'beanie' },
       // Added last, not beside the other beanies, so every earlier fabric keeps its place in the list.
-      { name:'Chocolate', hex:'#53271a', texture:ASSETS+'fabrics/beanie-chocolate-knit.webp', whole:true, turn:true, wash:false, lift:.1, scale:.5, line:'beanie' }
+      { name:'Chocolate', hex:'#53271a', texture:ASSETS+'fabrics/beanie-chocolate-knit.webp', whole:true, turn:true, wash:false, lift:0, deep:1.3, veil:0, fibre:.4, scale:.5, line:'beanie' }
     ];
     const fonts = [
       // Petit is a non-connecting script: each letter carries its own entry
