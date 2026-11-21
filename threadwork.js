@@ -1451,7 +1451,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
           uploaded=uploadSnapshot(id);
           body.append('items[0][properties][_image]',image);
           body.append('items[1][id]',embroideryId);body.append('items[1][quantity]',qty);body.append('items[1][parent_id]',variantId);
-          body.append('items[1][properties][_for]',title);body.append('items[1][properties][_link]',link);
+          // _link carries the design too (?tw_text=&tw_font=&tw_thread=), so opening it from the order shows this exact embroidery on the product page (d, for fulfilment). The product page already rebuilds an embroidery from those three.
+          let designLink=link;try{const u=new URL(link,location.origin);u.searchParams.set('tw_text',text);u.searchParams.set('tw_font',fonts[state.font].name);u.searchParams.set('tw_thread',threads[state.thread].name);designLink=u.toString();}catch(e){}
+          body.append('items[1][properties][_for]',title);body.append('items[1][properties][_link]',designLink);
           body.append('items[1][properties][Embroidery Text]',text);body.append('items[1][properties][Thread Color]',threads[state.thread].name);body.append('items[1][properties][Font]',fonts[state.font].name);
           body.append('items[1][properties][_image]',image);body.append('items[1][properties][_flow]',FLOW);
         }
