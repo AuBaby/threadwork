@@ -78,7 +78,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       // Kid + Adult beanies (rib photos, placeholder). `turn` draws the photo rotated 180 degrees: as shot, the rib knit read upside down.
             { name:'Charcoal', hex:'#29282e', texture:ASSETS+'fabrics/beanie-charcoal-knit.webp', whole:true, turn:true, wash:false, lift:.05, marl:.34, fleck:{density:.008,len:18,width:4,gain:50,lean:4,soft:2,rib:1.3}, scale:.5, line:'beanie' },
       { name:'Cobalt', hex:'#1c2f8a', texture:ASSETS+'fabrics/beanie-cobalt-knit.webp', whole:true, turn:true, wash:false, lift:0, deep:1.3, veil:0, fibre:.4, scale:.5, line:'beanie' }, { name:'Lavande', hex:'#b9a2cf', texture:ASSETS+'fabrics/beanie-lavande-knit.webp', whole:true, turn:true, scale:.5, line:'beanie' },
-      { name:'Pink Haze', hex:'#ce8085', texture:ASSETS+'fabrics/beanie-pink-haze-knit.webp', whole:true, turn:true, wash:.06, veil:.5, lift:.14, marl:.1, scale:.5, line:'beanie' },
+      { name:'Pink Haze', hex:'#d0787b', texture:ASSETS+'fabrics/beanie-pink-haze-knit.webp', whole:true, turn:true, wash:false, veil:0, lift:0, deep:.87, marl:.1, scale:.5, line:'beanie' },
       // Added last, not beside the other beanies, so every earlier fabric keeps its place in the list.
       { name:'Chocolate', hex:'#53271a', texture:ASSETS+'fabrics/beanie-chocolate-knit.webp', whole:true, turn:true, wash:false, lift:0, deep:1.3, veil:0, fibre:.4, scale:.5, line:'beanie' }
     ];
