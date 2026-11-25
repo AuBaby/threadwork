@@ -618,7 +618,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         // The hand-traced masters belong to Pacifico; every other face is
         // thinned from its own ink and then recentred like the rest.
         const master=fonts[state.font].family==='Pacifico'?strokeMasters[character]:(fontMasters[fonts[state.font].family]||{})[character];
-        const local=master&&!master.native?master.d.map((d,i)=>{const line=sampleStroke(d);if(master.fixed&&master.fixed.includes(i))line.forEach(q=>q.fixed=true);return line;}).concat(master.dot?[knot(master.dot[0],master.dot[1],5)]:[]):wordCenterlines(character,metrics);
+        const local=master&&!master.native?master.d.map((d,i)=>{const line=sampleStroke(d);if(master.fixed&&master.fixed.includes(i))line.forEach(q=>q.fixed=true);return line;}).concat(master.dot?[knot(master.dot[0],master.dot[1],5).map(q=>({...q,isDot:true}))]:[]):wordCenterlines(character,metrics);
         // A master's `tail` is where the pen stops when no letter follows:
         // a joined stroke leaves at the exit, a final one runs on to the tail.
         if(master&&master.tail&&last){const end=p=>Math.hypot(p.x-master.exit[0],p.y-master.exit[1]);const near=line=>Math.min(end(line[0]),end(line[line.length-1]));const line=local.reduce((a,b)=>near(b)<near(a)?b:a);if(end(line[0])<end(line[line.length-1]))line.reverse();line.push({x:master.tail[0],y:master.tail[1]});}
@@ -641,7 +641,9 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
           // (shortest on a tie). Espiritu's s after a capital enters at the top of its body through a
           // long hairline, not at the bottom curl the position heuristic picks.
           const unstitched=route=>route.filter(p=>closestStrokePoint(p,glyphPaths).distance>5.5&&closestStrokePoint(p,previous.paths).distance>2.5).length;
-          const candidates=[entry];for(const line of glyphPaths)for(const p of [line[0],line[line.length-1]])if(!candidates.some(c=>Math.hypot(c.x-p.x,c.y-p.y)<3))candidates.push(p);
+          // A master's dot (the knot over an i or j) is never somewhere a join lands: after an l, whose loop
+          // passes close to it, the route to the dot used to win and the thread ran from the l across to the dot.
+          const candidates=[entry];for(const line of glyphPaths){if(line[0]&&line[0].isDot)continue;for(const p of [line[0],line[line.length-1]])if(!candidates.some(c=>Math.hypot(c.x-p.x,c.y-p.y)<3))candidates.push(p);}
           let best=null;
           for(const c of candidates){const route=connectStrokes(previous.exit,c,field,bounds);if(!route.length)continue;const score=unstitched(route);if(!best||score>best.score+2||(Math.abs(score-best.score)<=2&&route.length<best.route.length))best={c,route,score};}
           if(best)entry=best.c;
