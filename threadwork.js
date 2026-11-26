@@ -1151,7 +1151,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Each letter count is its own variant in the store with its own price (6 letters was $48 while 1 letter was $7.50:
     // not always a straight multiple), so the table below, filled from the store, wins over the per-letter figure.
     const EMB_PRICES={};const embPrice=n=>EMB_PRICES[n]?EMB_PRICES[n][0]:n*PRICE_PER_LETTER,embFull=n=>EMB_PRICES[n]?EMB_PRICES[n][1]:n*FULL_PER_LETTER;
-    const wasNow=n=>{const now=embPrice(n),was=embFull(n);return was>now?'<s style="font-weight:400;color:#747474;text-decoration:line-through">'+money(was)+'</s> '+money(now):money(now);};
+    /* d: no struck price in the lab (too cluttered there); product pages keep it. */const wasNow=n=>{const now=embPrice(n),was=embFull(n);return was>now&&embed.mode!=='lab'?'<s style="font-weight:400;color:#747474;text-decoration:line-through">'+money(was)+'</s> '+money(now):money(now);};
     let MAX_LETTERS=parseInt(embed.max,10)||(embed.line==='popcorn'?3:20);
     // The cap shows in the hint, the field label (initials when 3 or fewer) and the counter.
     const POPCORN_TIP='The Popcorn’s thick knit is best suited for initials. For a full name, we recommend The Sawa or the Little Love.';
