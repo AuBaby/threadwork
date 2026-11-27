@@ -98,7 +98,39 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     {const norm=t=>t.toLowerCase().replace(/[^a-z]/g,''),want=norm(embed.blanket);const match=f=>norm(f.name)===want||(f.aka||[]).some(a=>norm(a)===want);let i=embed.line?fabrics.findIndex(f=>f.line===embed.line&&match(f)):-1;if(i<0&&want)i=fabrics.findIndex(match);if(i<0&&embed.line)i=fabrics.findIndex(f=>f.line===embed.line);if(i>=0)state.fabric=i;}
     // Every measurement, raster and guide uses the chosen face at 180 px,
     // with the face's own tracking (a non-connecting script sits tighter).
-    const fontSpec = () => `180px "${fonts[state.font].family}"`;
+    const fontSpec = () => `180px "${fonts[state.font].family}","Threadwork Han"`;
+    // Chinese names (d, 2026-11-27). None of the lettering faces holds Chinese, so the browser used to fall back to
+    // the device's own font (YaHei on Windows, PingFang on iPhone) and the same name was stitched differently on
+    // each. Every Han character is now drawn in one shared face (HAN_FAMILIES below, first that has it), fetched one
+    // slice at a time the first time such a character is typed. Each face is limited to the single
+    // character it was fetched for, so Latin text never touches it. A character whose font has not arrived within
+    // four seconds is drawn in the device font, as before.
+    // The face d chose (2026-11-27) is LXGW WenKai Regular: a handwriting (Kai) style with mainland stroke forms, so
+    // the small strokes are long enough to stitch (the drop of 厶) and 凌 has its separate dash. It is open source
+    // (OFL, licence beside it) and its slices sit with the studio's own files in assets/han/. The two Noto faces from
+    // Google Fonts only stand in for a character WenKai does not have.
+    const HAN_WEIGHT=400;
+    const HAN=/\p{Script=Han}/u,HAN_FAMILIES=[ASSETS+'han/lxgwwenkai-regular.css','Noto Sans SC','Noto Sans TC'],hanDone=new Set(),hanPending=new Map(),hanCss={};let hanVersion=0,hanRetry=false;
+    // A family is a Google Fonts name, or the full address of a stylesheet sliced the same way (its font files may be relative to it).
+    const hanSheet=family=>family.includes('/')?new URL(family,location.href).href:'https://fonts.googleapis.com/css2?family='+family.replace(/ /g,'+')+':wght@'+HAN_WEIGHT+'&display=block';
+    const hanSlices=family=>hanCss[family]||(hanCss[family]=fetch(hanSheet(family)).then(r=>r.ok?r.text():'').then(css=>[...css.matchAll(/src:\s*url\(([^)]+)\)[^}]*?unicode-range:\s*([^;}]+)/g)].map(m=>({url:new URL(m[1].replace(/^['"]|['"]$/g,''),hanSheet(family)).href,ranges:m[2].split(',').map(s=>s.trim().replace(/^U\+/i,'').split('-').map(h=>parseInt(h,16)))}))).catch(()=>[]));
+    function hanChar(ch){
+      if(!hanPending.has(ch)){
+        const cp=ch.codePointAt(0);
+        const work=(async()=>{
+          for(const family of HAN_FAMILIES){
+            const slice=(await hanSlices(family)).find(s=>s.ranges.some(r=>cp>=r[0]&&cp<=(r.length>1?r[1]:r[0])));
+            if(!slice)continue;
+            const face=new FontFace('Threadwork Han','url('+slice.url+')',{unicodeRange:'U+'+cp.toString(16),weight:String(HAN_WEIGHT)});
+            await face.load();document.fonts.add(face);hanVersion++;return;
+          }
+        })().catch(()=>{});
+        hanPending.set(ch,Promise.race([work,new Promise(r=>setTimeout(r,4000))]).then(()=>{hanDone.add(ch);}));
+      }
+      return hanPending.get(ch);
+    }
+    // null when every Chinese character in the text is ready (or there is none); otherwise a promise that always resolves.
+    function hanLoad(text){const need=[...new Set([...text])].filter(ch=>HAN.test(ch)&&!hanDone.has(ch));return need.length?Promise.all(need.map(hanChar)):null;}
     // Initials (two to five capitals and nothing else) are a monogram: in every face they are spaced
     // apart and stitched as separate letters, since capitals otherwise run into one another.
     // Centreline to centreline, since the chain has its own width (d, 2026-11-01: ink-to-ink left Pacifico
@@ -601,6 +633,8 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     }
     let monogram=null,spaced=null;
     function makeGeometry(){
+      // A Chinese character whose font is still on its way: keep what is on the cloth and rebuild once it is in.
+      const han=hanLoad(state.text);if(han){if(!hanRetry){hanRetry=true;han.then(()=>{hanRetry=false;if(ready){makeGeometry();requestRender();}});}return;}
       paths=[];geometry=null;monogram=null;if(!state.text.trim())return;
       const measure=applyFont(document.createElement('canvas').getContext('2d'));
       if(initials())monogram=monogramLayout(measure);
@@ -849,7 +883,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       }
     }
     function wordCenterlines(character,metrics){
-      const key=fonts[state.font].family+'|'+character;
+      const key=fonts[state.font].family+'|'+character+(HAN.test(character)?'|'+hanVersion:'');
       if(!skeletons.has(key))skeletons.set(key,traceGlyph(character,metrics));
       return skeletons.get(key).map(line=>line.map(p=>({...p})));
     }
@@ -886,7 +920,10 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         while(stack.length){const p=stack.pop(),x=p%w,y=Math.floor(p/w);component.push(p);x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);
           for(const d of offsets)if(a[p+d]&&!seen[p+d]){seen[p+d]=1;stack.push(p+d);}
         }
-        if(x1-x0<43&&y1-y0<43&&component.length>5){
+        // In a Chinese character a small separate piece is a stroke of its own (the 厶 in 魏, the drops of 冫), not
+        // the dot of an i, so it is traced like any other stroke; only a piece no longer than a stroke and a half
+        // is wide (a true round dot) still becomes a knot. preHalf is about a quarter of the stroke width.
+        if(x1-x0<43&&y1-y0<43&&component.length>5&&(!HAN.test(character)||Math.max(x1-x0,y1-y0)<preHalf*6)){
           // A hollow mark (a ring-shaped i-dot) is stitched as one loop
           // along the ring's own centreline, measured on the original ink
           // before its pore was filled; a solid dot keeps its short tick.
@@ -1046,6 +1083,29 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       }
       for(let pass=0;pass<polish;pass++)for(let j=0;j<lines.length;j++){const line=lines[j];lines[j]=line.map((p,i)=>!i||i===line.length-1?p:{x:(line[i-1].x+p.x*2+line[i+1].x)/4,y:(line[i-1].y+p.y*2+line[i+1].y)/4});}
       dropApexes();
+      // Chinese strokes (d, 2026-11-27): thinning stops about half a stroke short of every stroke end, so a short
+      // tail past a crossing (the drop of 厶 in 魏) is left a unit or two long and is later trimmed away. Every end
+      // that no other line touches walks straight on through the ink and stops a little inside the edge. A stub too
+      // short to have a direction of its own takes it from the line it continues across the crossing. An end that
+      // is still in ink after a stroke width sits inside a junction and is left alone.
+      if(HAN.test(character)){
+        const ends=[];for(const l of lines)if(l.length>1)ends.push({l,p:l[0],q:l[Math.min(l.length-1,8)]},{l,p:l[l.length-1],q:l[Math.max(0,l.length-9)]});
+        const touching=(line,e)=>ends.filter(o=>o.l!==line&&Math.hypot(o.p.x-e.x,o.p.y-e.y)<2.5);
+        const unit=(x,y)=>{const n=Math.hypot(x,y)||1;return{x:x/n,y:y/n};};
+        for(const line of lines){
+          if(line.length<2)continue;
+          for(const side of [0,1]){
+            const n=line.length,e=side?line[n-1]:line[0],root=side?line[0]:line[n-1];
+            if(touching(line,e).length)continue;
+            let t=unit(e.x-(side?line[Math.max(0,n-9)]:line[Math.min(n-1,8)]).x,e.y-(side?line[Math.max(0,n-9)]:line[Math.min(n-1,8)]).y);
+            if(n<9){let best=.5;for(const o of touching(line,root)){const u=unit(o.p.x-o.q.x,o.p.y-o.q.y),dot=u.x*t.x+u.y*t.y;if(dot>best){best=dot;t=u;}}}
+            let reach=0;const cap=half*2.4;while(reach<cap&&inside(e.x+t.x*(reach+.5),e.y+t.y*(reach+.5)))reach+=.5;
+            if(reach>=cap)continue;reach-=half*.4;
+            const added=[];for(let s=1;s<=reach;s++)added.push({x:e.x+t.x*s,y:e.y+t.y*s});
+            if(side)line.push(...added);else line.unshift(...added.reverse());
+          }
+        }
+      }
       // A ring dot's knot spirals out to the ring's own centreline.
       for(const mark of marks)lines.push(knot(mark.x,mark.y,mark.ring||mark.radius));
       return lines.map(line=>line.map(p=>({x:p.x-pad-left,y:p.y-pad-ascent})));
@@ -1467,6 +1527,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
         let uploaded=Promise.resolve(true);
         if(withEmbroidery){
           const id=generateId(),image=IMAGE_BASE+id+'.jpg';
+          const han=hanLoad(state.text);if(han)await han;
           clearTimeout(debounce);cancelAnimationFrame(raf);makeGeometry();renderArtwork();
           uploaded=uploadSnapshot(id);
           body.append('items[0][properties][_image]',image);
@@ -1521,6 +1582,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
       if(!ready)return;const n=letters(state.text);if(!n){askName();return;}
       // The card's thumbnail must show the real tile: if this fabric's texture is still on its way, wait for it.
       const tf=fabrics[state.fabric];if(tf.texture&&!tf.pattern&&!tf.photoCanvas){ensureTexture(tf).then(()=>{drawCloth();saveEmbroidery();});return;}
+      const han=hanLoad(state.text);if(han){han.then(saveEmbroidery);return;}
       clearTimeout(debounce);cancelAnimationFrame(raf);makeGeometry();renderArtwork();
       saved={text:state.text.trim(),font:state.font,thread:state.thread,fabric:state.fabric,n,thumb:thumbJpeg()};
       saving=true;closeModal();saving=false;renderSummary();announce('saved',{letters:n});
@@ -1528,7 +1590,7 @@ SHADOW.innerHTML='<style>'+CSS+'</style>'+HTML;
     // Closing without saving puts the modal back to what the card shows.
     function restoreSaved(){if(!saved)return;state.text=saved.text;$('name').value=saved.text;state.font=saved.font;state.thread=saved.thread;updateControls();makeGeometry();}
     // A cart thumbnail links back here with ?tw_text=&tw_font=&tw_thread=: rebuild the saved embroidery and show its card.
-    function restoreFromUrl(){if(embed.mode!=='product'||urlRestore.cancelled)return;const q=new URLSearchParams(location.search);let text=clean((q.get('tw_text')||'').trim());if(MAX_LETTERS<=3)text=text.toUpperCase();if(!text||letters(text)>MAX_LETTERS)return;const norm=t=>String(t).toLowerCase().replace(/[^a-z]/g,'');const fi=fonts.findIndex(f=>norm(f.name)===norm(q.get('tw_font')||'')),ti=threads.findIndex(t=>norm(t.name)===norm(q.get('tw_thread')||''));state.text=text;$('name').value=text;if(fi>=0)state.font=fi;if(ti>=0)state.thread=ti;updateControls();makeGeometry();renderArtwork();saved={text,font:state.font,thread:state.thread,fabric:state.fabric,n:letters(text),thumb:thumbJpeg()};renderSummary();if(urlRestore.openWhenReady)openModal();}
+    function restoreFromUrl(){if(embed.mode!=='product'||urlRestore.cancelled)return;const q=new URLSearchParams(location.search);let text=clean((q.get('tw_text')||'').trim());if(MAX_LETTERS<=3)text=text.toUpperCase();if(!text||letters(text)>MAX_LETTERS)return;const han=hanLoad(text);if(han){han.then(restoreFromUrl);return;}const norm=t=>String(t).toLowerCase().replace(/[^a-z]/g,'');const fi=fonts.findIndex(f=>norm(f.name)===norm(q.get('tw_font')||'')),ti=threads.findIndex(t=>norm(t.name)===norm(q.get('tw_thread')||''));state.text=text;$('name').value=text;if(fi>=0)state.font=fi;if(ti>=0)state.thread=ti;updateControls();makeGeometry();renderArtwork();saved={text,font:state.font,thread:state.thread,fabric:state.fabric,n:letters(text),thumb:thumbJpeg()};renderSummary();if(urlRestore.openWhenReady)openModal();}
     cartButton.addEventListener('click',()=>{if(embed.mode==='product'&&!previewing&&FLOW==='save')saveEmbroidery();else if(canSell())addToCart();else if(!letters(state.text))askName();});
     // From here the store can be asked about the lab's chosen product (fetchProduct exists now).
     labSync.on=true;labSync();
